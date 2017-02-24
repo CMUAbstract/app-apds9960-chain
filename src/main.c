@@ -2,16 +2,28 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+#include <math.h> 
+#include <stdarg.h> 
 
 #include <libwispbase/wisp-base.h>
+#include <libmsp/mem.h>
 #include <libchain/chain.h>
 #include <libio/log.h>
+#include "libmspware/driverlib.h"
+#include "proximity.h"
+#include "pins.h"
 
 #ifdef CONFIG_LIBEDB_PRINTF
 #include <libedb/edb.h>
 #endif
 
-#include "pin_assign.h"
+#ifdef CONFIG_EDB
+#include <libedb/edb.h>
+#else
+#define WATCHPOINT(...)
+#endif
+
 
 #define INIT_TASK_DURATION_ITERS  400000
 #define TASK_START_DURATION_ITERS 1600000
@@ -56,6 +68,9 @@ MULTICAST_CHANNEL(msg_duty_cycle, ch_duty_cycle, task_init, task_1, task_2);
 
 volatile unsigned work_x;
 
+
+void initializeHardware();
+
 static void burn(uint32_t iters)
 {
     uint32_t iter = iters;
@@ -80,8 +95,8 @@ void init()
 #if defined(PORT_LED_3) // when available, this LED indicates power-on
     GPIO(PORT_LED_3, OUT) |= BIT(PIN_LED_3);
 #endif
-
-    LOG("chain app booted\r\n");
+		initializeHardware();
+    LOG("gesture app booted\r\n");
 }
 
 static void blink_led1(unsigned blinks, unsigned duty_cycle) {
@@ -108,11 +123,91 @@ static void blink_led2(unsigned blinks, unsigned duty_cycle) {
     }
 }
 
+void i2c_setup(void) {
+  /*
+  * Select Port 1
+  * Set Pin 6, 7 to input Secondary Module Function:
+  *   (UCB0SIMO/UCB0SDA, UCB0SOMI/UCB0SCL)
+  */
+
+
+  GPIO_setAsPeripheralModuleFunctionInputPin(
+    GPIO_PORT_P1,
+    GPIO_PIN6 + GPIO_PIN7,
+    GPIO_SECONDARY_MODULE_FUNCTION
+  );
+
+
+
+  EUSCI_B_I2C_initMasterParam param = {0};
+  param.selectClockSource = EUSCI_B_I2C_CLOCKSOURCE_SMCLK;
+  param.i2cClk = CS_getSMCLK();
+  param.dataRate = EUSCI_B_I2C_SET_DATA_RATE_400KBPS;
+  param.byteCounterThreshold = 0;
+  param.autoSTOPGeneration = EUSCI_B_I2C_NO_AUTO_STOP;
+
+  EUSCI_B_I2C_initMaster(EUSCI_B0_BASE, &param);
+  
+
+}
+/*
+static void delay(uint32_t cycles)
+{
+    unsigned i;
+    for (i = 0; i < cycles / (1U << 15); ++i)
+        __delay_cycles(1U << 15);
+}
+*/
+void initializeHardware()
+{
+    WDTCTL = WDTPW | WDTHOLD;  // Stop watchdog timer
+
+#if defined(BOARD_EDB) || defined(BOARD_WISP) || defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
+    PM5CTL0 &= ~LOCKLPM5;	   // Enable GPIO pin settings
+#endif
+
+#if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
+    P1DIR |= BIT0 | BIT1 | BIT2;
+    P1OUT &= ~(BIT0 | BIT1 | BIT2);
+    P2DIR |= BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7;
+    P2OUT &= ~(BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7);
+    P3DIR |= BIT6 | BIT7;
+    P3OUT &= ~(BIT6 | BIT7);
+    P4DIR |= BIT0 | BIT1 | BIT4;
+    P4OUT &= ~(BIT0 | BIT1 | BIT4);
+    PJDIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
+    PJOUT |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
+#endif
+
+#if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
+    CSCTL0_H = 0xA5;
+    CSCTL1 = DCOFSEL_6; //8MHz
+    CSCTL3 = DIVA_0 + DIVS_0 + DIVM_0;
+#endif
+
+#ifdef CONFIG_EDB
+    debug_setup();
+    edb_set_app_output_cb(write_app_output);
+#endif
+
+    INIT_CONSOLE();
+
+    __enable_interrupt();
+
+    WATCHPOINT(WATCHPOINT_BOOT);
+
+    i2c_setup();
+		LOG("i2c setup done \r\n"); 
+		proximity_init(); 
+
+    LOG("space app: curtsk %u\r\n", curctx->task->idx);
+}
+
 void task_init()
 {
     task_prologue();
-
     LOG("init\r\n");
+		getGesture(); 
 
     // Solid flash signifying beginning of task
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
@@ -136,11 +231,11 @@ void task_init()
 void task_1()
 {
     task_prologue();
-
     unsigned blinks;
     unsigned duty_cycle;
-
+		getGesture(); 
     LOG("task 1\r\n");
+ 		PRINTF("CAN'T STOP TASK 1 \r\n"); 
 
     // Solid flash signifying beginning of task
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
@@ -170,7 +265,7 @@ void task_2()
     unsigned duty_cycle;
 
     LOG("task 2\r\n");
-
+		PRINTF("can't stop task 2!\r\n");
     // Solid flash signifying beginning of task
     GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
     burn(TASK_START_DURATION_ITERS);
