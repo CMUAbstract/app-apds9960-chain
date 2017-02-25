@@ -1,0 +1,4 @@
+A basic application using the APDS9960 image sensor. The goal is to test a design
+methodology for building energy harvesting devices and providing reconfigurable power
+systems. This app is based on code in app-blinker-chain and leans heavily on the I2C
+examples from app-space-chain. 

@@ -95,6 +95,7 @@ void init()
 #if defined(PORT_LED_3) // when available, this LED indicates power-on
     GPIO(PORT_LED_3, OUT) |= BIT(PIN_LED_3);
 #endif
+		LOG("Starting init\r\n"); 
 		initializeHardware();
     LOG("gesture app booted\r\n");
 }
@@ -207,7 +208,7 @@ void task_init()
 {
     task_prologue();
     LOG("init\r\n");
-		getGesture(); 
+	//	getGesture(); 
 
     // Solid flash signifying beginning of task
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
@@ -233,12 +234,14 @@ void task_1()
     task_prologue();
     unsigned blinks;
     unsigned duty_cycle;
-		getGesture(); 
+	//	getGesture(); 
     LOG("task 1\r\n");
  		PRINTF("CAN'T STOP TASK 1 \r\n"); 
-
+		uint8_t prox = readProximity(); 
+		LOG("Proximity = %u \r\n", prox); 
     // Solid flash signifying beginning of task
-    GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
+
+		GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
     burn(TASK_START_DURATION_ITERS);
     GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
     burn(TASK_START_DURATION_ITERS);
@@ -247,7 +250,8 @@ void task_1()
     duty_cycle = *CHAN_IN1(unsigned, duty_cycle,
                            MC_IN_CH(ch_duty_cycle, task_init, task_1));
 
-    LOG("task 1: blinks %u dc %u\r\n", blinks, duty_cycle);
+    
+		LOG("task 1: blinks %u dc %u\r\n", blinks, duty_cycle);
 
     blink_led1(blinks, duty_cycle);
     blinks++;

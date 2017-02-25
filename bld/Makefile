@@ -1,13 +1,15 @@
-EXEC = blinker
+EXEC = gesture
 
 OBJECTS = \
 	main.o \
+	proximity.o\
 
 DEPS += \
-	libchain \
 	libmsp \
 	libwispbase \
 	libio \
+	libmspware\
+	libchain \
 
 CONFIG_EDB ?= 0
 #CONFIG_PRINTF_LIB ?= libedb
