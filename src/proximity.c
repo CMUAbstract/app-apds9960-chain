@@ -377,6 +377,21 @@ void enableGesture(void){
 	PRINTF("Enable reg = %u \r\n", test); 
 	return ;
 }
+
+/**
+ *@brief decides if a sample is outside of the allowed window. 
+ *@details really just a stand in for something more complicated
+ */
+int8_t anomalyCheck(uint8_t sample, uint8_t baseline, uint8_t allowedDev){
+	if(sample < baseline - allowedDev || sample > baseline + allowedDev){
+		return -1; 
+	}
+	else{
+		return 1; 
+	}
+}
+
+
 /*
  *@brief consecutively writes register address and value over i2c
  *@details analogous to wirewritedatabyte in wire.h

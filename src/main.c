@@ -29,42 +29,80 @@
 #define TASK_START_DURATION_ITERS 1600000
 #define BLINK_DURATION_ITERS      400000
 #define WAIT_TICK_DURATION_ITERS  300000
-#define NUM_BLINKS_PER_TASK       5
+#define NUM_BLINKS_PER_TASK       1
 #define WAIT_TICKS                3
+
+#define NUM_AVGS 2 
+#define NUM_SAMPS  32
 
 // If you link-in wisp-base, then you have to define some symbols.
 uint8_t usrBank[USRBANK_SIZE];
 
-struct msg_blinks {
-    CHAN_FIELD(unsigned, blinks);
+struct msg_self_index{
+	SELF_CHAN_FIELD(uint16_t, index); 
 };
-
-struct msg_tick {
-    CHAN_FIELD(unsigned, tick);
-};
-
-struct msg_self_tick {
-    SELF_CHAN_FIELD(unsigned, tick);
-};
-#define FIELD_INIT_msg_self_tick { \
-    SELF_FIELD_INITIALIZER \
+#define FIELD_INIT_msg_self_index { \
+	SELF_FIELD_INITIALIZER \
 }
 
-struct msg_duty_cycle {
-    CHAN_FIELD(unsigned, duty_cycle);
+struct msg_index{
+	CHAN_FIELD(uint16_t, index); 
 };
 
-TASK(1, task_init)
-TASK(2, task_1)
-TASK(3, task_2)
-TASK(4, task_3)
+struct msg_samp_info{
+	CHAN_FIELD(uint16_t, index); 
+	CHAN_FIELD(uint8_t, sample); 
+};
 
-CHANNEL(task_init, task_1, msg_blinks);
-CHANNEL(task_init, task_3, msg_tick);
-CHANNEL(task_1, task_2, msg_blinks);
-CHANNEL(task_2, task_1, msg_blinks);
-SELF_CHANNEL(task_3, msg_self_tick);
-MULTICAST_CHANNEL(msg_duty_cycle, ch_duty_cycle, task_init, task_1, task_2);
+struct msg_self_samples{
+	SELF_CHAN_FIELD_ARRAY(uint8_t, samples, NUM_SAMPS); 
+	SELF_CHAN_FIELD(uint8_t, anoms); 
+};
+#define FIELD_INIT_msg_self_samples { \
+	SELF_FIELD_ARRAY_INITIALIZER(NUM_SAMPS), \
+	SELF_FIELD_INITIALIZER \
+}
+
+struct msg_samples{
+	CHAN_FIELD_ARRAY(uint8_t, samples, NUM_SAMPS); 
+	CHAN_FIELD(uint8_t, anoms); 
+};
+
+struct msg_self_warningParams{
+	SELF_CHAN_FIELD_ARRAY(uint8_t, averages, NUM_AVGS); 
+	SELF_CHAN_FIELD(uint8_t, baseline); 
+	SELF_CHAN_FIELD(uint8_t, dev); 
+}; 
+#define FIELD_INIT_msg_self_warningParams { \
+	SELF_FIELD_ARRAY_INITIALIZER(NUM_AVGS), \
+	SELF_FIELD_INITIALIZER, \
+	SELF_FIELD_INITIALIZER \
+}
+
+struct msg_warningParams{
+	CHAN_FIELD_ARRAY(uint8_t, averages, NUM_AVGS); 
+	CHAN_FIELD(uint8_t, baseline); 
+	CHAN_FIELD(uint8_t, dev); 
+}; 
+
+
+TASK(1, task_init)
+TASK(2, task_sample)
+TASK(3, task_detect)
+TASK(4, task_average)
+
+CHANNEL(task_init, task_sample, msg_index); 
+CHANNEL(task_init, task_detect, msg_samples); 
+CHANNEL(task_init, task_average, msg_warningParams); 
+
+SELF_CHANNEL(task_sample, msg_self_index); 
+CHANNEL(task_sample, task_detect, msg_samp_info); 
+
+SELF_CHANNEL(task_detect, msg_self_samples); 
+CHANNEL(task_detect, task_average, msg_samples); 
+
+SELF_CHANNEL(task_average, msg_self_warningParams); 
+CHANNEL(task_average, task_detect, msg_warningParams); 
 
 volatile unsigned work_x;
 
@@ -208,8 +246,6 @@ void task_init()
 {
     task_prologue();
     LOG("init\r\n");
-	//	getGesture(); 
-
     // Solid flash signifying beginning of task
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
@@ -217,103 +253,77 @@ void task_init()
     GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
     burn(INIT_TASK_DURATION_ITERS);
+		//Init task_sample fields
+		uint16_t indexInit = 0; 
+		CHAN_OUT1(uint16_t, index, indexInit, CH(task_init, task_sample)); 
+		//Init task_detect fields
+		uint8_t i; 
+		for(i = 0; i < NUM_SAMPS; i++){
+			uint8_t dataInit = 0; 
+			CHAN_OUT1(uint8_t, samples[i], dataInit, CH(task_init, task_detect)); 
+		}
+		uint16_t anomInit = 0; 
+		CHAN_OUT1(uint16_t, anoms, anomInit, CH(task_init, task_detect)); 
+		//Init task_average fields
+		for(i = 0; i < NUM_AVGS; i++){
+			uint8_t avgInit = 0; 
+			CHAN_OUT1(uint8_t, averages[i], avgInit, CH(task_init, task_average));
+		}
+		uint8_t baseInit = 0; 
+		CHAN_OUT1(uint8_t, baseline, baseInit, CH(task_init, task_average)); 
+		uint8_t devInit = 0xFF; 
+		CHAN_OUT1(uint8_t, dev, devInit, CH(task_init, task_average)); 
 
-    unsigned blinks = NUM_BLINKS_PER_TASK;
-    CHAN_OUT1(unsigned, blinks, blinks, CH(task_init, task_1));
-    unsigned tick = 0;
-    CHAN_OUT1(unsigned, tick, tick, CH(task_init, task_3));
-    unsigned duty_cycle = 75;
-    CHAN_OUT1(unsigned, duty_cycle, duty_cycle,
-             MC_OUT_CH(ch_duty_cycle, task_init, task_1, task_2));
-
-    TRANSITION_TO(task_3);
+  	TRANSITION_TO(task_average);
 }
 
-void task_1()
+void task_sample()
 {
     task_prologue();
-    unsigned blinks;
-    unsigned duty_cycle;
-	//	getGesture(); 
-    LOG("task 1\r\n");
- 		PRINTF("CAN'T STOP TASK 1 \r\n"); 
-		uint8_t prox = readProximity(); 
-		LOG("Proximity = %u \r\n", prox); 
-    // Solid flash signifying beginning of task
+		LOG("running task_sample \r\n");
+		burn(BLINK_DURATION_ITERS); 
+		uint16_t index = *CHAN_IN2(uint8_t, index, SELF_IN_CH(task_sample),
+																				CH(task_init,task_sample));
+		uint8_t proxVal = readProximity(); 
+		CHAN_OUT1(uint8_t,sample, proxVal, CH(task_sample, task_detect)); 
+		index++; 
+		CHAN_OUT1(uint16_t, index, index, SELF_OUT_CH(task_sample)); 
+		TRANSITION_TO(task_detect);
+}
 
-		GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
-    burn(TASK_START_DURATION_ITERS);
-    GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
-    burn(TASK_START_DURATION_ITERS);
+void task_detect()
+{
+    task_prologue();
+    uint8_t baseline = *CHAN_IN1(uint8_t, baseline,CH(task_average, task_detect)); 
+		
+    uint8_t dev = *CHAN_IN1(uint8_t, dev,CH(task_average, task_detect));
+		uint8_t sample = *CHAN_IN1(uint8_t, sample, CH(task_sample, task_detect));
+		uint16_t index = *CHAN_IN1(uint16_t, index, CH(task_sample, task_detect)); 
+		int flag = anomalyCheck(sample, baseline, dev); 
+		uint8_t anoms = *CHAN_IN2(uint8_t, anoms, SELF_IN_CH(task_detect), 
+		 																				 CH(task_init, task_detect)); 
+		if(flag < 0){
+			LOG("ANOMALY DETECTED!\r\n"); 
+			anoms++; 
+		}
+		CHAN_OUT1(uint8_t, anoms, anoms, SELF_OUT_CH(task_detect)); 
+		TRANSITION_TO(task_average);
+}
 
-    blinks = *CHAN_IN2(unsigned, blinks, CH(task_init, task_1), CH(task_2, task_1));
-    duty_cycle = *CHAN_IN1(unsigned, duty_cycle,
-                           MC_IN_CH(ch_duty_cycle, task_init, task_1));
+void task_average()
+{
+    task_prologue();
+   	LOG("Computing Average... \r\n"); 
+		uint8_t dev = *CHAN_IN2(uint8_t, dev, SELF_IN_CH(task_average), 
+																					CH(task_init, task_average)); 
+		uint8_t baseline = *CHAN_IN2(uint8_t, baseline, SELF_IN_CH(task_average), 
+																					CH(task_init, task_average)); 
 
+		CHAN_OUT1(uint8_t, dev, dev, CH(task_average, task_detect)); 
+		CHAN_OUT1(uint8_t, baseline, baseline, CH(task_average, task_detect)); 
+	  
+		TRANSITION_TO(task_sample);
     
-		LOG("task 1: blinks %u dc %u\r\n", blinks, duty_cycle);
-
-    blink_led1(blinks, duty_cycle);
-    blinks++;
-
-    CHAN_OUT1(unsigned, blinks, blinks, CH(task_1, task_2));
-
-    TRANSITION_TO(task_2);
-}
-
-void task_2()
-{
-    task_prologue();
-
-    unsigned blinks;
-    unsigned duty_cycle;
-
-    LOG("task 2\r\n");
-		PRINTF("can't stop task 2!\r\n");
-    // Solid flash signifying beginning of task
-    GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
-    burn(TASK_START_DURATION_ITERS);
-    GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
-    burn(TASK_START_DURATION_ITERS);
-
-    blinks = *CHAN_IN1(unsigned, blinks, CH(task_1, task_2));
-    duty_cycle = *CHAN_IN1(unsigned, duty_cycle,
-                           MC_IN_CH(ch_duty_cycle, task_init, task_2));
-
-    LOG("task 2: blinks %u dc %u\r\n", blinks, duty_cycle);
-
-    blink_led2(blinks, duty_cycle);
-    blinks++;
-
-    CHAN_OUT1(unsigned, blinks, blinks, CH(task_2, task_1));
-
-    TRANSITION_TO(task_3);
-}
-
-void task_3()
-{
-    task_prologue();
-
-    unsigned wait_tick = *CHAN_IN2(unsigned, tick, CH(task_init, task_3),
-                                                   SELF_IN_CH(task_3));
-
-    LOG("task 3: wait tick %u\r\n", wait_tick);
-
-    GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
-    GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
-    burn(WAIT_TICK_DURATION_ITERS);
-    GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
-    GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
-    burn(WAIT_TICK_DURATION_ITERS);
-
-    if (++wait_tick < WAIT_TICKS) {
-        CHAN_OUT1(unsigned, tick, wait_tick, SELF_OUT_CH(task_3));
-        TRANSITION_TO(task_3);
-    } else {
-        unsigned tick = 0;
-        CHAN_OUT1(unsigned, tick, tick, SELF_OUT_CH(task_3));
-        TRANSITION_TO(task_1);
-    }
 }
 
 ENTRY_TASK(task_init)

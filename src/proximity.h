@@ -229,7 +229,7 @@ int8_t getGesture(void);
 void enableGesture(void); 
 void enableProximitySensor(void);
 uint8_t readProximity(void); 
-
+int8_t anomalyCheck(uint8_t, uint8_t, uint8_t); 
 /*A couple of modules to make the msp i2c library feel more like the Arduino wire.h lib
  * for the sake of simiplifying example transfer*/
 void writeDataByte(uint8_t reg, uint8_t val);
