@@ -210,8 +210,22 @@ void enableProximitySensor(void){
 uint8_t readProximity(){
 	uint8_t val = 0; 
 	restartTransmit(); 
+	//LOG("Waiting on write2 \r\n"); 
 	writeSingleByte(APDS9960_PDATA); 
-	val = readDataByte(); 
+	//LOG("Waiting on read2 \r\n"); 
+	/*Begin added section*/ 
+	EUSCI_B_I2C_disable(EUSCI_B0_BASE); 
+  EUSCI_B_I2C_setSlaveAddress(EUSCI_B0_BASE, APDS9960_I2C_ADDR); 
+  EUSCI_B_I2C_setMode(EUSCI_B0_BASE, EUSCI_B_I2C_RECEIVE_MODE);
+  EUSCI_B_I2C_enable(EUSCI_B0_BASE);
+  EUSCI_B_I2C_masterReceiveStart(EUSCI_B0_BASE);
+//	LOG("Waiting on read3 \r\n"); 
+  val = EUSCI_B_I2C_masterReceiveSingle(EUSCI_B0_BASE);
+//	LOG("Waiting on read4 \r\n"); 
+  EUSCI_B_I2C_masterReceiveMultiByteStop(EUSCI_B0_BASE);
+
+	/*End added section*/ 	
+	//val = readDataByte(); 
 	return val ; 
 }
 
@@ -383,12 +397,18 @@ void enableGesture(void){
  *@details really just a stand in for something more complicated
  */
 int8_t anomalyCheck(uint8_t sample, uint8_t baseline, uint8_t allowedDev){
-	if(sample < baseline - allowedDev || sample > baseline + allowedDev){
-		return -1; 
+	//Bounds limits set by max/min values of uint8_t (0x0 and 0xFF)
+	if(baseline >= allowedDev){
+		//check out of bounds low
+		if(sample < baseline - allowedDev)
+			return -1; 
 	}
-	else{
-		return 1; 
+	if(baseline + allowedDev <= 0xFF){
+		//check out of bounds high 
+		if(sample > baseline + allowedDev)
+			return -1; 
 	}
+	return 1; 
 }
 
 

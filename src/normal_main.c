@@ -34,12 +34,12 @@ void init()
 {
     WISP_init();
 
-    GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
+/*    GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
 #if defined(PORT_LED_3)
     GPIO(PORT_LED_3, DIR) |= BIT(PIN_LED_3);
 #endif
-
+*/
     INIT_CONSOLE();
 
     __enable_interrupt();
@@ -96,7 +96,7 @@ void initializeHardware()
 #endif
 
 #if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
-    P1DIR |= BIT0 | BIT1 | BIT2;
+ /*   P1DIR |= BIT0 | BIT1 | BIT2;
     P1OUT &= ~(BIT0 | BIT1 | BIT2);
     P2DIR |= BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7;
     P2OUT &= ~(BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7);
@@ -106,6 +106,7 @@ void initializeHardware()
     P4OUT &= ~(BIT0 | BIT1 | BIT4);
     PJDIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
     PJOUT |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
+*/
 #endif
 
 #if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
@@ -119,9 +120,9 @@ void initializeHardware()
     edb_set_app_output_cb(write_app_output);
 #endif
 
-    INIT_CONSOLE();
+ //   INIT_CONSOLE();
 
-    __enable_interrupt();
+ //   __enable_interrupt();
 
     WATCHPOINT(WATCHPOINT_BOOT);
 

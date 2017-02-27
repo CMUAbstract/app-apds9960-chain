@@ -81,6 +81,7 @@ struct msg_self_warningParams{
 
 struct msg_warningParams{
 	CHAN_FIELD_ARRAY(uint8_t, averages, NUM_AVGS); 
+	CHAN_FIELD_ARRAY(uint8_t, samples, NUM_SAMPS); 
 	CHAN_FIELD(uint8_t, baseline); 
 	CHAN_FIELD(uint8_t, dev); 
 }; 
@@ -107,7 +108,6 @@ CHANNEL(task_average, task_detect, msg_warningParams);
 volatile unsigned work_x;
 
 
-void initializeHardware();
 
 static void burn(uint32_t iters)
 {
@@ -116,23 +116,26 @@ static void burn(uint32_t iters)
         work_x++;
 }
 
+void initializeHardware(void);
+
 void init()
 {
     WISP_init();
 
-    GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
+/*   GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
 #if defined(PORT_LED_3)
     GPIO(PORT_LED_3, DIR) |= BIT(PIN_LED_3);
 #endif
-
+*/
     INIT_CONSOLE();
 
     __enable_interrupt();
-
+/*
 #if defined(PORT_LED_3) // when available, this LED indicates power-on
     GPIO(PORT_LED_3, OUT) |= BIT(PIN_LED_3);
 #endif
+*/
 		LOG("Starting init\r\n"); 
 		initializeHardware();
     LOG("gesture app booted\r\n");
@@ -189,16 +192,20 @@ void i2c_setup(void) {
   
 
 }
-/*
+
 static void delay(uint32_t cycles)
 {
     unsigned i;
     for (i = 0; i < cycles / (1U << 15); ++i)
         __delay_cycles(1U << 15);
 }
-*/
+
 void initializeHardware()
-{
+{		WISP_init(); 
+		INIT_CONSOLE(); 
+		__enable_interrupt(); 
+		LOG("Starting HW setup \r\n"); 
+
     WDTCTL = WDTPW | WDTHOLD;  // Stop watchdog timer
 
 #if defined(BOARD_EDB) || defined(BOARD_WISP) || defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
@@ -229,9 +236,9 @@ void initializeHardware()
     edb_set_app_output_cb(write_app_output);
 #endif
 
-    INIT_CONSOLE();
+    //INIT_CONSOLE();
 
-    __enable_interrupt();
+    //__enable_interrupt();
 
     WATCHPOINT(WATCHPOINT_BOOT);
 
@@ -269,6 +276,10 @@ void task_init()
 			uint8_t avgInit = 0; 
 			CHAN_OUT1(uint8_t, averages[i], avgInit, CH(task_init, task_average));
 		}
+		for(i = 0; i < NUM_SAMPS; i++){
+			uint8_t dataInit = 0; 
+			CHAN_OUT1(uint8_t, samples[i], dataInit, CH(task_init, task_average)); 
+		}
 		uint8_t baseInit = 0; 
 		CHAN_OUT1(uint8_t, baseline, baseInit, CH(task_init, task_average)); 
 		uint8_t devInit = 0xFF; 
@@ -281,19 +292,25 @@ void task_sample()
 {
     task_prologue();
 		LOG("running task_sample \r\n");
-		burn(BLINK_DURATION_ITERS); 
+	//	delay(READ_PROX_DELAY_CYCLES); 
+		burn(400000); 
+	//	LOG("Delay done \r\n"); 
 		uint16_t index = *CHAN_IN2(uint8_t, index, SELF_IN_CH(task_sample),
 																				CH(task_init,task_sample));
+	//	LOG("Index = %u \r\n", index); 
+	//	LOG("Index = %u log still works\r\n", index); 
 		uint8_t proxVal = readProximity(); 
 		CHAN_OUT1(uint8_t,sample, proxVal, CH(task_sample, task_detect)); 
 		index++; 
 		CHAN_OUT1(uint16_t, index, index, SELF_OUT_CH(task_sample)); 
+		LOG("proximity = %x \r\n", proxVal); 
 		TRANSITION_TO(task_detect);
 }
 
 void task_detect()
 {
     task_prologue();
+		LOG("Running detect \r\n"); 
     uint8_t baseline = *CHAN_IN1(uint8_t, baseline,CH(task_average, task_detect)); 
 		
     uint8_t dev = *CHAN_IN1(uint8_t, dev,CH(task_average, task_detect));
@@ -306,8 +323,16 @@ void task_detect()
 			LOG("ANOMALY DETECTED!\r\n"); 
 			anoms++; 
 		}
+		
+		CHAN_OUT1(uint8_t, samples[index], sample, SELF_OUT_CH(task_detect)); 
+		CHAN_OUT1(uint8_t, samples[index], sample, CH(task_detect, task_average)); 
 		CHAN_OUT1(uint8_t, anoms, anoms, SELF_OUT_CH(task_detect)); 
-		TRANSITION_TO(task_average);
+		if(index % NUM_SAMPS == 0){
+			TRANSITION_TO(task_average);
+		}
+		else{
+			TRANSITION_TO(task_sample); 
+		}
 }
 
 void task_average()
@@ -318,7 +343,35 @@ void task_average()
 																					CH(task_init, task_average)); 
 		uint8_t baseline = *CHAN_IN2(uint8_t, baseline, SELF_IN_CH(task_average), 
 																					CH(task_init, task_average)); 
-
+		/*Run through and calculate an average + 1-3 quartile spread*/ 
+		uint8_t samples[NUM_SAMPS]; 
+		uint16_t i, newAvg = 0;
+		for(i = 0; i < NUM_SAMPS; i++)
+			samples[i] = 0; 
+		for(i =0 ; i < NUM_SAMPS; i++){
+			uint8_t curSamp =  *CHAN_IN2(uint8_t, samples[i], CH(task_detect, task_average),
+																												CH(task_init, task_average)); 
+			newAvg += curSamp; 
+			uint16_t j; 
+			for(j = 0; j < i; j++){
+				if(curSamp >= samples[j] && curSamp < samples[j+1]){
+					uint16_t k;
+					for(k = i-1; k >= j; k--)
+						samples[k+1] = samples[k];
+				break; 
+				}
+			}
+			samples[j] = curSamp; 
+		}
+		LOG("samples = "); 
+		for(i = 0; i < NUM_SAMPS; i++)
+			LOG("%x ", samples[i]); 
+		LOG("\r\n"); 
+		/*Resetting dev here, could use old dev in more complicated fitler*/ 
+		dev = samples[NUM_SAMPS/4 + NUM_SAMPS/2] - samples[NUM_SAMPS/4];
+		newAvg = newAvg / NUM_SAMPS;
+		LOG("Avg = %x, Dev = %x \r\n", newAvg, dev); 
+		
 		CHAN_OUT1(uint8_t, dev, dev, CH(task_average, task_detect)); 
 		CHAN_OUT1(uint8_t, baseline, baseline, CH(task_average, task_detect)); 
 	  

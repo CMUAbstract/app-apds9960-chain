@@ -223,6 +223,8 @@ typedef struct gesture_data_type {
 
 } gesture_data_type;
 
+/*Delay cycles for 8MHz clock to give 250ms delay*/ 
+#define READ_PROX_DELAY_CYCLES 2000000 
 /*Helper functions for handling proximity sensor*/
 void proximity_init(void); 
 int8_t getGesture(void); 
