@@ -121,7 +121,7 @@ void initializeHardware(void);
 void init()
 {
     WISP_init();
-
+		
 /*   GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
 #if defined(PORT_LED_3)
@@ -138,7 +138,8 @@ void init()
 */
 		LOG("Starting init\r\n"); 
 		initializeHardware();
-    LOG("gesture app booted\r\n");
+    burn(400000); 
+		LOG("gesture app booted\r\n");
 }
 
 static void blink_led1(unsigned blinks, unsigned duty_cycle) {
@@ -213,7 +214,7 @@ void initializeHardware()
 #endif
 
 #if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
-    P1DIR |= BIT0 | BIT1 | BIT2;
+    /*P1DIR |= BIT0 | BIT1 | BIT2;
     P1OUT &= ~(BIT0 | BIT1 | BIT2);
     P2DIR |= BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7;
     P2OUT &= ~(BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7);
@@ -222,7 +223,7 @@ void initializeHardware()
     P4DIR |= BIT0 | BIT1 | BIT4;
     P4OUT &= ~(BIT0 | BIT1 | BIT4);
     PJDIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
-    PJOUT |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
+    PJOUT |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;*/
 #endif
 
 #if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
@@ -291,7 +292,7 @@ void task_init()
 void task_sample()
 {
     task_prologue();
-		LOG("running task_sample \r\n");
+	//	LOG("running task_sample \r\n");
 	//	delay(READ_PROX_DELAY_CYCLES); 
 		burn(400000); 
 	//	LOG("Delay done \r\n"); 
@@ -301,16 +302,18 @@ void task_sample()
 	//	LOG("Index = %u log still works\r\n", index); 
 		uint8_t proxVal = readProximity(); 
 		CHAN_OUT1(uint8_t,sample, proxVal, CH(task_sample, task_detect)); 
+		CHAN_OUT1(uint8_t, index, index, CH(task_sample, task_detect)); 
 		index++; 
+		if(index == NUM_SAMPS)
+			index = 0; 
 		CHAN_OUT1(uint16_t, index, index, SELF_OUT_CH(task_sample)); 
-		LOG("proximity = %x \r\n", proxVal); 
+	//	LOG("proximity = %x \r\n", proxVal); 
 		TRANSITION_TO(task_detect);
 }
 
 void task_detect()
 {
     task_prologue();
-		LOG("Running detect \r\n"); 
     uint8_t baseline = *CHAN_IN1(uint8_t, baseline,CH(task_average, task_detect)); 
 		
     uint8_t dev = *CHAN_IN1(uint8_t, dev,CH(task_average, task_detect));
@@ -319,6 +322,7 @@ void task_detect()
 		int flag = anomalyCheck(sample, baseline, dev); 
 		uint8_t anoms = *CHAN_IN2(uint8_t, anoms, SELF_IN_CH(task_detect), 
 		 																				 CH(task_init, task_detect)); 
+		LOG("Running detect, index = %u \r\n", index); 
 		if(flag < 0){
 			LOG("ANOMALY DETECTED!\r\n"); 
 			anoms++; 
@@ -326,8 +330,9 @@ void task_detect()
 		
 		CHAN_OUT1(uint8_t, samples[index], sample, SELF_OUT_CH(task_detect)); 
 		CHAN_OUT1(uint8_t, samples[index], sample, CH(task_detect, task_average)); 
+
 		CHAN_OUT1(uint8_t, anoms, anoms, SELF_OUT_CH(task_detect)); 
-		if(index % NUM_SAMPS == 0){
+		if(index == NUM_SAMPS - 1){
 			TRANSITION_TO(task_average);
 		}
 		else{
@@ -352,17 +357,29 @@ void task_average()
 			uint8_t curSamp =  *CHAN_IN2(uint8_t, samples[i], CH(task_detect, task_average),
 																												CH(task_init, task_average)); 
 			newAvg += curSamp; 
-			uint16_t j; 
+			int16_t j,k;
+			uint8_t flag = 0; 
 			for(j = 0; j < i; j++){
+				flag = 0; 
+				if(curSamp < samples[j])
+					break; 
 				if(curSamp >= samples[j] && curSamp < samples[j+1]){
-					uint16_t k;
 					for(k = i-1; k >= j; k--)
 						samples[k+1] = samples[k];
-				break; 
+					flag = 1; 
+					break; 
 				}
 			}
-			samples[j] = curSamp; 
+			if(j == 0 && !flag){
+					for(k = i-1; k >= j; k--)
+						samples[k+1] = samples[k];
+			}
+			if(flag)
+				samples[j+1] = curSamp; 
+			else
+				samples[j] = curSamp; 
 		}
+		
 		LOG("samples = "); 
 		for(i = 0; i < NUM_SAMPS; i++)
 			LOG("%x ", samples[i]); 
