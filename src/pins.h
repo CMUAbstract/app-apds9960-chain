@@ -18,6 +18,7 @@
 #define     PIN_LED_2            6
 
 #define     PORT_AUX            3
+#define 		PIN_AUX_0						3
 #define     PIN_AUX_1           4
 #define     PIN_AUX_2           5
 
@@ -35,12 +36,18 @@
 #define     PIN_LED_3            0
 
 #define     PORT_AUX            3
+#define 		PIN_AUX_0						6
 #define     PIN_AUX_1           4
 #define     PIN_AUX_2           5
 
 
 #define     PORT_AUX3           1
 #define     PIN_AUX_3           4
+
+#define 		PORT_RESET					3
+#define 		PIN_RESET						5
+#define 		PORT_SET 						3
+#define 		PIN_SET						6
 
 #elif defined(BOARD_SPRITE_APP_SOCKET_RHA)
 

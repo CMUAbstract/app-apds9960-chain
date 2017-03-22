@@ -73,22 +73,23 @@ void proximity_init(void) {
 	/*Set ambient light gain*/
 	drive = DEFAULT_AGAIN; 
 	drive &= 0x3; 
-	val &= 0xFE; 
+	val &= 0xFC; 
 	val |= drive; 
 	/*Write all changes*/
 	restartTransmit(); 
 	writeDataByte(APDS9960_CONTROL,val); 
+	writeDataByte(APDS9960_PILT, DEFAULT_PILT);
 	writeDataByte(APDS9960_PIHT, DEFAULT_PIHT); 
 	/*Set low thresh for ambient light interrupts*/
 	uint16_t thresh = DEFAULT_AILT; 
 	uint8_t lowByte = thresh & 0x00FF;
-	uint8_t highByte = thresh & 0xFF00; 
+	uint8_t highByte = (thresh & 0xFF00) >> 8; 
 	writeDataByte(APDS9960_AILTL, lowByte); 
 	writeDataByte(APDS9960_AILTH, highByte); 
 	/*Set high threshold for ambient light interrupts*/ 
-	thresh = DEFAULT_AILT; 
+	thresh = DEFAULT_AIHT; 
 	lowByte = thresh & 0x00FF;
-	highByte = thresh & 0xFF00; 
+	highByte = (thresh & 0xFF00 >> 8); 
 	writeDataByte(APDS9960_AIHTL, lowByte); 
 	writeDataByte(APDS9960_AIHTH, highByte); 
 	writeDataByte(APDS9960_PERS, DEFAULT_PERS); 
@@ -143,14 +144,14 @@ void proximity_init(void) {
 	uint8_t enable = DEFAULT_GIEN;
 	enable &= 0x01; 
 	enable = enable << 1; 
-	val &= 0xF5; 
+	val &= 0xFD; 
 	val |= enable; 
 	restartTransmit(); 
 	writeDataByte(APDS9960_GCONF4, val); 
 
 
   LOG("Proximity sensor set up. ID:  %x\r\n", proximityID);
-	enableProximitySensor(); 
+	//	enableProximitySensor(); 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ID); 
 	val = readDataByte(); 
@@ -230,30 +231,25 @@ uint8_t readProximity(){
 }
 
 int8_t  getGesture(void){
-	PRINTF("Testing after gesture init \r\n"); 
 	/*Test if a gesture is available*/
 //	restartTransmit(); 
-	LOG("HERE!");
   EUSCI_B_I2C_disable(EUSCI_B0_BASE); 
 	EUSCI_B_I2C_setSlaveAddress(EUSCI_B0_BASE, APDS9960_I2C_ADDR); 
   while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE)); 
-	LOG("past wait \r\n"); 
 	EUSCI_B_I2C_setMode(EUSCI_B0_BASE, EUSCI_B_I2C_TRANSMIT_MODE);
   EUSCI_B_I2C_enable(EUSCI_B0_BASE);
 	writeSingleByte(APDS9960_ID); 
 	uint8_t check = readDataByte();
-	LOG("Check = %x \r\n",check); 
+	LOG("ID Check = %x \r\n",check); 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_GSTATUS); //Check gstatus!
-	LOG("HERE1!");
 	uint8_t test = readDataByte(); 
-	LOG("HERE2!");
 	test &= APDS9960_GVALID;
-	LOG("test val 1 = %x \r\n",test); 
+	LOG("Gvalid  val= %x \r\n",test); 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	uint8_t enable = readDataByte(); 
-	LOG("enable val 1 = %x \r\n",enable); 
+	LOG("enable val = %x \r\n",enable); 
 	enable &= 0x81; 
 	test &= enable; 
 	if(!test){
@@ -315,34 +311,33 @@ void enableGesture(void){
 	//	resetGestureFields(); 
 	restartTransmit(); 
 	/*Write 0 to ENABLE*/
-	writeDataByte(APDS9960_ENABLE, 0); 	
-	LOG("Writing ppulse times \r\n"); 
+	//writeDataByte(APDS9960_ENABLE, 0); 	
 	writeDataByte(APDS9960_WTIME,0xFF); 
-	LOG("Wrote WTIME\r\n"); 
 	writeDataByte(APDS9960_PPULSE, DEFAULT_GESTURE_PPULSE); 
-	LOG("Wrote WTIME & PPULSE\r\n"); 
 	/*Set LED boost*/
 	boost = LED_BOOST_300; 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_CONFIG2); 
 	val = readDataByte(); 
+	LOG("CONFIG2 = %x \r\n", val); 
 	boost &=0x3; 
 	boost = boost << 4; 
 	val &= 0xCF;
 	val |= boost; 
-	LOG("Writing %u \r\n", val); 
+	LOG("Writing %x to CONFIG2 \r\n", val); 
 	restartTransmit(); 
 	writeDataByte(APDS9960_CONFIG2, val); 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_CONFIG2); 
 	test = readDataByte(); 
-	LOG("Config2 = %u \r\n",test); 
+	LOG("Confirmed Config2 = %x \r\n",test); 
 	
-	/*Disable gesture interrupt... we'll just poll*/
-	enable = 0;
+	/*Enable gesture interrupt... for now*/
+	enable = 1;
 	restartTransmit(); 
 	writeSingleByte(APDS9960_GCONF4); 
 	val = readDataByte(); 
+	LOG("GCONF4 = %x \r\n", val); 
 	enable &= 0x1; 
 	enable = enable << 1; 
 	val &= 0xFD;
@@ -352,44 +347,59 @@ void enableGesture(void){
 	mode  &= 0x1; 
 	val &= 0xFE; 
 	val |= mode;
-	restartTransmit(); 
+	LOG("Writing %x to GCONF4 \r\n", val); 
 	writeDataByte(APDS9960_GCONF4, val); 
 	/*Enable power*/
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
-	val = readDataByte(); 
+	val = readDataByte();
+	LOG("ENABLE = %x \r\n", val); 
 	val |= (1 << POWER);
 	restartTransmit(); 
+	LOG("Writing %x to ENABLE \r\n", val); 
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Enable wait mode*/
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte(); 
+	LOG("ENABLE = %x \r\n", val); 
 	val |= (1 << WAIT); 
 	restartTransmit(); 
+	LOG("Writing %x to ENABLE \r\n", val); 
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Enable proximity mode*/ 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte(); 
+	LOG("ENABLE = %x \r\n", val); 
 	val |= (1 << PROXIMITY); 
 	restartTransmit(); 
+	LOG("Writing %x to ENABLE \r\n", val); 
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Enable gesture mode*/ 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte(); 
-	val |= (1 < GESTURE);
-	LOG("Writing %x \r\n",val); 
+	LOG("ENABLE = %x \r\n", val); 
+	val |= (1 << GESTURE);
+	LOG("Writing %x to ENABLE \r\n", val); 
 	restartTransmit(); 
 	writeDataByte(APDS9960_ENABLE, val); 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	test = readDataByte(); 	
+	LOG("Confirmed write %x to ENABLE \r\n"); 
 	//EUSCI_B_I2C_disable(EUSCI_B0_BASE); 
-	
-	PRINTF("Enable reg = %u \r\n", test); 
 	return ;
+}
+
+void check_mode(void){
+	uint8_t val ;
+	restartTransmit(); 
+	writeSingleByte(APDS9960_ENABLE); 
+	val = readDataByte(); 
+	LOG("enable reg = %x \r\n", val); 
+	return; 
 }
 
 /**

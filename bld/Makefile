@@ -1,10 +1,11 @@
 EXEC = gesture
 
 OBJECTS = \
-	main.o \
+	main.o\
 	proximity.o\
 
 DEPS += \
+	libchain\
 	libmsp \
 	libwispbase \
 	libio \

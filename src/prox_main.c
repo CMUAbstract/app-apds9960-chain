@@ -245,16 +245,15 @@ void initializeHardware()
 
     i2c_setup();
 		LOG("i2c setup done \r\n"); 
-		//	proximity_init(); 
+		proximity_init(); 
 		enableGesture(); 
     LOG("space app: curtsk %u\r\n", curctx->task->idx);
-		check_mode(); 	
 }
 
 void task_init()
 {
     task_prologue();
-    LOG("task_init\r\n");
+    LOG("init\r\n");
     // Solid flash signifying beginning of task
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
@@ -293,7 +292,7 @@ void task_init()
 void task_sample()
 {
     task_prologue();
-	LOG(" task_sample \r\n");
+	LOG("running task_sample \r\n");
 	//	delay(READ_PROX_DELAY_CYCLES); 
 		burn(400000); 
 	//	LOG("Delay done \r\n"); 
@@ -301,8 +300,7 @@ void task_sample()
 																				CH(task_init,task_sample));
 	//	LOG("Index = %u \r\n", index); 
 	//	LOG("Index = %u log still works\r\n", index); 
-		//uint8_t proxVal = readProximity();
-		uint8_t proxVal = 0; 
+		uint8_t proxVal = readProximity();
 		int8_t gestVal = getGesture();
 		CHAN_OUT1(uint8_t,sample, proxVal, CH(task_sample, task_detect)); 
 		CHAN_OUT1(uint8_t, index, index, CH(task_sample, task_detect)); 
@@ -311,14 +309,12 @@ void task_sample()
 			index = 0; 
 		CHAN_OUT1(uint16_t, index, index, SELF_OUT_CH(task_sample)); 
 	//	LOG("proximity = %x \r\n", proxVal); 
-		TRANSITION_TO(task_sample); 
-	//		TRANSITION_TO(task_detect);
+		TRANSITION_TO(task_detect);
 }
 
 void task_detect()
 {
     task_prologue();
-    LOG("task_detect\r\n");
     uint8_t baseline = *CHAN_IN1(uint8_t, baseline,CH(task_average, task_detect)); 
 		
     uint8_t dev = *CHAN_IN1(uint8_t, dev,CH(task_average, task_detect));
@@ -348,7 +344,6 @@ void task_detect()
 void task_average()
 {
     task_prologue();
-    LOG("task_average\r\n");
    	LOG("Computing Average... \r\n"); 
 		uint8_t dev = *CHAN_IN2(uint8_t, dev, SELF_IN_CH(task_average), 
 																					CH(task_init, task_average)); 
