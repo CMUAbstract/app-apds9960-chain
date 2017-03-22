@@ -302,7 +302,8 @@ void task_sample()
 	//	LOG("Index = %u \r\n", index); 
 	//	LOG("Index = %u log still works\r\n", index); 
 		//uint8_t proxVal = readProximity();
-		uint8_t proxVal = 0; 
+		uint8_t proxVal = 0;
+		LOG("getting_gesture \r\n"); 
 		int8_t gestVal = getGesture();
 		CHAN_OUT1(uint8_t,sample, proxVal, CH(task_sample, task_detect)); 
 		CHAN_OUT1(uint8_t, index, index, CH(task_sample, task_detect)); 

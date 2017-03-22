@@ -233,6 +233,7 @@ uint8_t readProximity(){
 int8_t  getGesture(void){
 	/*Test if a gesture is available*/
 //	restartTransmit(); 
+  LOG("Inside get gesture! \r\n"); 
   EUSCI_B_I2C_disable(EUSCI_B0_BASE); 
 	EUSCI_B_I2C_setSlaveAddress(EUSCI_B0_BASE, APDS9960_I2C_ADDR); 
   while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE)); 
