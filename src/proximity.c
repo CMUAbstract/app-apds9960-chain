@@ -250,16 +250,16 @@ int8_t  getGesture(void){
 	writeSingleByte(APDS9960_ENABLE); 
 	uint8_t enable = readDataByte(); 
 	LOG("enable val = %x \r\n",enable); 
-	enable &= 0x81; 
+	enable &= 0x41; 
 	test &= enable; 
 	if(!test){
 		return DIR_NONE; 
 	}
-	/*Not looping since chain this will run in a task that gets repeated*/ 
+	
 		restartTransmit(); 
-		writeSingleByte(APDS9960_GVALID); 
+		writeSingleByte(APDS9960_GSTATUS); 
 		uint8_t gstatus = readDataByte(); 
-		LOG("gstatsu val 1 = %x \r\n",gstatus); 
+		LOG("gstatus val 1 = %x \r\n",gstatus); 
 		if((gstatus & APDS9960_GVALID) == APDS9960_GVALID){
 			restartTransmit(); 
 			writeSingleByte(APDS9960_GFLVL); 
@@ -277,18 +277,26 @@ int8_t  getGesture(void){
 				uint8_t i; 
 				for(i = 0; i < fifo_level * 4; i++){
 					fifoContents[i] =  EUSCI_B_I2C_masterReceiveSingle(EUSCI_B0_BASE);
-					if(!i%4){
-						LOG("Got: ");
-					}
-					LOG("%u ", fifoContents[i]); 
-					if(!i%4){
-						LOG("\r\n"); 
-					}
 				}
   			EUSCI_B_I2C_masterReceiveMultiByteStop(EUSCI_B0_BASE);
   			while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE));
+				for(i = 0; i < fifo_level * 4; i++){	
+					if(i == 0 || i == fifo_level || i == fifo_level*2 || i == fifo_level*3){
+						LOG("Got: ");
+					}
+					LOG("%u ", fifoContents[i]); 
+					if(i == fifo_level -1 || i == fifo_level*2 -1 || i == fifo_level*3 -1 || i ==
+								fifo_level*4 -1){
+						LOG("\r\n ");
+					}
+				}
 			}
-		}			/*Add in processing stuff here*/ 	
+		
+			LOG("ESCAPED!\r\n"); 
+		}
+		LOG("ESCAPED ALL!\r\n"); 
+		restartTransmit(); 
+		/*Add in processing stuff here*/ 	
 	return DIR_UP;  
 }
 
