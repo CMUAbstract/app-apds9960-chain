@@ -402,6 +402,17 @@ void enableGesture(void){
 	return ;
 }
 
+void disableGesture(){
+	restartTransmit(); 
+	writeSingleByte(APDS9960_ENABLE); 
+	uint8_t val = readDataByte(); 
+	val &= ~(1 << GESTURE); 
+	restartTransmit(); 
+	writeDataByte(APDS9960_ENABLE, val); 
+	LOG("New enable = %x \r\n", val); 
+	return; 
+}
+
 void check_mode(void){
 	uint8_t val ;
 	restartTransmit(); 

@@ -246,7 +246,8 @@ void initializeHardware()
     i2c_setup();
 		LOG("i2c setup done \r\n"); 
 		proximity_init(); 
-		enableGesture(); 
+		enableProximitySensor(); 
+		//enableGesture(); 
     LOG("space app: curtsk %u\r\n", curctx->task->idx);
 }
 
@@ -325,8 +326,12 @@ void task_detect()
 		 																				 CH(task_init, task_detect)); 
 		LOG("Running detect, index = %u \r\n", index); 
 		if(flag < 0){
+			enableGesture(); 
 			LOG("ANOMALY DETECTED! Val = %u \r\n", sample);
 			anoms++; 
+		}
+		else{
+			disableGesture(); 
 		}
 		
 		CHAN_OUT1(uint8_t, samples[index], sample, SELF_OUT_CH(task_detect)); 
