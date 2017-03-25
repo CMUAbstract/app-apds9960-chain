@@ -33,77 +33,63 @@
 #define WAIT_TICKS                3
 
 #define NUM_AVGS 2 
-#define NUM_SAMPS  32
+#define NUM_SAMPS  8
+#define ALERT_THRESH 30
+#define MIN_DATA_SETS 5
+#define MAX_GESTS 128
+
+#define CNTPWR 1
+
 
 // If you link-in wisp-base, then you have to define some symbols.
 uint8_t usrBank[USRBANK_SIZE];
 
-struct msg_self_index{
-	SELF_CHAN_FIELD(uint16_t, index); 
+struct msg_flag_vals{
+	CHAN_FIELD(uint8_t, flag);
+	CHAN_FIELD(uint8_t, stale); 
 };
-#define FIELD_INIT_msg_self_index { \
+
+struct msg_self_stale_flag{
+	SELF_CHAN_FIELD(uint8_t, stale); 
+};
+#define FIELD_INIT_msg_self_stale_flag { \
 	SELF_FIELD_INITIALIZER \
-}
-
-struct msg_index{
-	CHAN_FIELD(uint16_t, index); 
-};
-
-struct msg_samp_info{
-	CHAN_FIELD(uint16_t, index); 
-	CHAN_FIELD(uint8_t, sample); 
-};
-
-struct msg_self_samples{
-	SELF_CHAN_FIELD_ARRAY(uint8_t, samples, NUM_SAMPS); 
-	SELF_CHAN_FIELD(uint8_t, anoms); 
-};
-#define FIELD_INIT_msg_self_samples { \
-	SELF_FIELD_ARRAY_INITIALIZER(NUM_SAMPS), \
-	SELF_FIELD_INITIALIZER \
-}
+} 
 
 struct msg_samples{
 	CHAN_FIELD_ARRAY(uint8_t, samples, NUM_SAMPS); 
-	CHAN_FIELD(uint8_t, anoms); 
 };
 
-struct msg_self_warningParams{
-	SELF_CHAN_FIELD_ARRAY(uint8_t, averages, NUM_AVGS); 
-	SELF_CHAN_FIELD(uint8_t, baseline); 
-	SELF_CHAN_FIELD(uint8_t, dev); 
-}; 
-#define FIELD_INIT_msg_self_warningParams { \
-	SELF_FIELD_ARRAY_INITIALIZER(NUM_AVGS), \
-	SELF_FIELD_INITIALIZER, \
+struct msg_self_gest_data{
+	CHAN_FIELD_ARRAY(gesture_t, gestures, MAX_GESTS); 
+	CHAN_FIELD(uint16_t, num_gests); 
+};
+#define FIELD_INIT_msg_self_gest_data { \
+	SELF_FIELD_ARRAY_INITIALIZER(MAX_GESTS), \
 	SELF_FIELD_INITIALIZER \
-}
+}  
 
-struct msg_warningParams{
-	CHAN_FIELD_ARRAY(uint8_t, averages, NUM_AVGS); 
-	CHAN_FIELD_ARRAY(uint8_t, samples, NUM_SAMPS); 
-	CHAN_FIELD(uint8_t, baseline); 
-	CHAN_FIELD(uint8_t, dev); 
-}; 
-
+struct msg_gest_data{
+	CHAN_FIELD_ARRAY(gesture_t, gestures, MAX_GESTS); 
+	CHAN_FIELD(uint16_t, num_gests); 
+};
 
 TASK(1, task_init)
 TASK(2, task_sample)
-TASK(3, task_detect)
-TASK(4, task_average)
+TASK(3, task_gestCapture)
+TASK(4, task_gestCalc)
 
-CHANNEL(task_init, task_sample, msg_index); 
-CHANNEL(task_init, task_detect, msg_samples); 
-CHANNEL(task_init, task_average, msg_warningParams); 
 
-SELF_CHANNEL(task_sample, msg_self_index); 
-CHANNEL(task_sample, task_detect, msg_samp_info); 
+CHANNEL(task_init, task_gestCalc, msg_gest_data); 
 
-SELF_CHANNEL(task_detect, msg_self_samples); 
-CHANNEL(task_detect, task_average, msg_samples); 
+CHANNEL(task_sample, task_gestCapture, msg_flag_vals); 
 
-SELF_CHANNEL(task_average, msg_self_warningParams); 
-CHANNEL(task_average, task_detect, msg_warningParams); 
+SELF_CHANNEL(task_gestCapture, msg_self_stale_flag); 
+
+CHANNEL(task_gestCapture, task_gestCalc, msg_samples); 
+
+SELF_CHANNEL(task_gestCalc, msg_self_gest_data); 
+
 
 volatile unsigned work_x;
 
@@ -138,33 +124,10 @@ void init()
 */
 		LOG("Starting init\r\n"); 
 		initializeHardware();
-    burn(400000); 
+		delay(100); 
 		LOG("gesture app booted\r\n");
 }
 
-static void blink_led1(unsigned blinks, unsigned duty_cycle) {
-    unsigned i;
-
-    for (i = 0; i < blinks; ++i) {
-        GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
-        burn(BLINK_DURATION_ITERS * 2 * duty_cycle / 100);
-
-        GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
-        burn(BLINK_DURATION_ITERS * 2 * (100 - duty_cycle) / 100);
-    }
-}
-
-static void blink_led2(unsigned blinks, unsigned duty_cycle) {
-    unsigned i;
-
-    for (i = 0; i < blinks; ++i) {
-        GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
-        burn(BLINK_DURATION_ITERS * 2 * duty_cycle / 100);
-
-        GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
-        burn(BLINK_DURATION_ITERS * 2 * (100 - duty_cycle) / 100);
-    }
-}
 
 void i2c_setup(void) {
   /*
@@ -172,15 +135,11 @@ void i2c_setup(void) {
   * Set Pin 6, 7 to input Secondary Module Function:
   *   (UCB0SIMO/UCB0SDA, UCB0SOMI/UCB0SCL)
   */
-
-
   GPIO_setAsPeripheralModuleFunctionInputPin(
     GPIO_PORT_P1,
     GPIO_PIN6 + GPIO_PIN7,
     GPIO_SECONDARY_MODULE_FUNCTION
   );
-
-
 
   EUSCI_B_I2C_initMasterParam param = {0};
   param.selectClockSource = EUSCI_B_I2C_CLOCKSOURCE_SMCLK;
@@ -190,11 +149,9 @@ void i2c_setup(void) {
   param.autoSTOPGeneration = EUSCI_B_I2C_NO_AUTO_STOP;
 
   EUSCI_B_I2C_initMaster(EUSCI_B0_BASE, &param);
-  
-
 }
 
-static void delay(uint32_t cycles)
+void delay(uint32_t cycles)
 {
     unsigned i;
     for (i = 0; i < cycles / (1U << 15); ++i)
@@ -237,18 +194,16 @@ void initializeHardware()
     edb_set_app_output_cb(write_app_output);
 #endif
 
-    //INIT_CONSOLE();
-
-    //__enable_interrupt();
 
     WATCHPOINT(WATCHPOINT_BOOT);
 
     i2c_setup();
 		LOG("i2c setup done \r\n"); 
+		/*Iinitialize apds*/
 		proximity_init(); 
+		/*Now enable the proximity sensor*/
 		enableProximitySensor(); 
-		//enableGesture(); 
-    LOG("space app: curtsk %u\r\n", curctx->task->idx);
+    LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
 }
 
 void task_init()
@@ -256,148 +211,100 @@ void task_init()
     task_prologue();
     LOG("init\r\n");
     // Solid flash signifying beginning of task
-    GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
+    #ifdef CNTPWR
+		GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
     burn(INIT_TASK_DURATION_ITERS);
     GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
-    burn(INIT_TASK_DURATION_ITERS);
-		//Init task_sample fields
-		uint16_t indexInit = 0; 
-		CHAN_OUT1(uint16_t, index, indexInit, CH(task_init, task_sample)); 
-		//Init task_detect fields
+		delay(INIT_TASK_DURATION_ITERS);
+   	#endif
+		
+		//Init task_gestCalc fields
 		uint8_t i; 
-		for(i = 0; i < NUM_SAMPS; i++){
-			uint8_t dataInit = 0; 
-			CHAN_OUT1(uint8_t, samples[i], dataInit, CH(task_init, task_detect)); 
+		for(i = 0; i < MAX_GESTS; i++){
+			gest_dir  dataInit = DIR_NONE; 
+			CHAN_OUT1(gest_dist, gestures[i], dataInit, CH(task_init, task_gestCalc)); 
 		}
-		uint16_t anomInit = 0; 
-		CHAN_OUT1(uint16_t, anoms, anomInit, CH(task_init, task_detect)); 
-		//Init task_average fields
-		for(i = 0; i < NUM_AVGS; i++){
-			uint8_t avgInit = 0; 
-			CHAN_OUT1(uint8_t, averages[i], avgInit, CH(task_init, task_average));
-		}
-		for(i = 0; i < NUM_SAMPS; i++){
-			uint8_t dataInit = 0; 
-			CHAN_OUT1(uint8_t, samples[i], dataInit, CH(task_init, task_average)); 
-		}
-		uint8_t baseInit = 0; 
-		CHAN_OUT1(uint8_t, baseline, baseInit, CH(task_init, task_average)); 
-		uint8_t devInit = 0xFF; 
-		CHAN_OUT1(uint8_t, dev, devInit, CH(task_init, task_average)); 
-
-  	TRANSITION_TO(task_average);
+		uint16_t gestInit = 0; 
+		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc)); 
+		/*Set initial power config here, don't forget a delay!*/ 
+  	TRANSITION_TO(task_sample);
 }
 
 void task_sample()
 {
-    task_prologue();
+  task_prologue();
 	LOG("running task_sample \r\n");
-	//	delay(READ_PROX_DELAY_CYCLES); 
-		burn(400000); 
-	//	LOG("Delay done \r\n"); 
-		uint16_t index = *CHAN_IN2(uint8_t, index, SELF_IN_CH(task_sample),
-																				CH(task_init,task_sample));
-	//	LOG("Index = %u \r\n", index); 
-	//	LOG("Index = %u log still works\r\n", index); 
-		uint8_t proxVal = readProximity();
-		int8_t gestVal = getGesture();
-		CHAN_OUT1(uint8_t,sample, proxVal, CH(task_sample, task_detect)); 
-		CHAN_OUT1(uint8_t, index, index, CH(task_sample, task_detect)); 
-		index++; 
-		if(index == NUM_SAMPS)
-			index = 0; 
-		CHAN_OUT1(uint16_t, index, index, SELF_OUT_CH(task_sample)); 
-	//	LOG("proximity = %x \r\n", proxVal); 
-		TRANSITION_TO(task_detect);
+	delay(READ_PROX_DELAY_CYCLES); 
+	uint8_t proxVal = readProximity();
+	LOG("ProxVal: %u \r\n", proxVal); 	
+	uint8_t flag = 0; 
+	if(proxVal > ALERT_THRESH){
+		flag = 1; 
+		uint8_t stale = 0; 
+		/*Add power system reconfiguration code here!!  
+			Switch to high power bank, let's assume that we precharged the banks in the past*/ 
+		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture)); 
+		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture)); 
+		TRANSITION_TO(task_gestCapture);
+	}
+	else{
+		TRANSITION_TO(task_sample);
+	}
+
 }
 
-void task_detect()
+void task_gestCapture()
 {
     task_prologue();
-    uint8_t baseline = *CHAN_IN1(uint8_t, baseline,CH(task_average, task_detect)); 
-		
-    uint8_t dev = *CHAN_IN1(uint8_t, dev,CH(task_average, task_detect));
-		uint8_t sample = *CHAN_IN1(uint8_t, sample, CH(task_sample, task_detect));
-		uint16_t index = *CHAN_IN1(uint16_t, index, CH(task_sample, task_detect)); 
-		int flag = anomalyCheck(sample, baseline, dev+5); 
-		uint8_t anoms = *CHAN_IN2(uint8_t, anoms, SELF_IN_CH(task_detect), 
-		 																				 CH(task_init, task_detect)); 
-		LOG("Running detect, index = %u \r\n", index); 
-		if(flag < 0){
+		uint8_t flag = *CHAN_IN1(uint8_t, flag, CH(task_sample, task_gestCapture));  
+		LOG("Running gesture \r\n");
+		uint8_t stale = *CHAN_IN2(uint8_t, stale, SELF_IN_CH(task_gestCapture),
+															CH(task_sample, task_gestCapture));
+		if(stale){
+			/*Have to hope that these occur atomically... */ 
+			TRANSITION_TO(task_sample); 
+		}
+		stale = 1; 
+		/*Mark that we've started a gesture*/ 
+		CHAN_OUT1(uint8_t, stale, stale, SELF_OUT_CH(task_gestCapture)); 
+		uint8_t num_samps = 0; 
+		if(flag > 0){
 			enableGesture(); 
-			LOG("ANOMALY DETECTED! Val = %u \r\n", sample);
-			anoms++; 
+			/*break down get gesture into a loop, loop until we hit the minimum number of data
+			points, o/w fail --> stale gesture data needs to be flushed. */
+			int8_t gestVal = getGesture();
+			num_samps++; 
+		}
+		disableGesture(); 	
+		if(num_samps > MIN_DATA_SETS){
+			/*put data into channel, and if failure happens before all of the data is recorded,
+			 * then no transition to gestCalc
+			 */
+		/*	for(uint8_t i = 0; i < MIN_DATA_SETS; i++){
+				CHAN_OUT1(uint8_t, samples[i], samples[i], CH(task_gestCapture, task_gestCalc)); 
+			}*/
+			TRANSITION_TO(task_gestCalc);
 		}
 		else{
-			disableGesture(); 
-		}
-		
-		CHAN_OUT1(uint8_t, samples[index], sample, SELF_OUT_CH(task_detect)); 
-		CHAN_OUT1(uint8_t, samples[index], sample, CH(task_detect, task_average)); 
-
-		CHAN_OUT1(uint8_t, anoms, anoms, SELF_OUT_CH(task_detect)); 
-		if(index == NUM_SAMPS - 1){
-			TRANSITION_TO(task_average);
-		}
-		else{
+			/*Didn't capture enough data to decide*/ 
 			TRANSITION_TO(task_sample); 
 		}
 }
 
-void task_average()
+void task_gestCalc()
 {
     task_prologue();
-   	LOG("Computing Average... \r\n"); 
-		uint8_t dev = *CHAN_IN2(uint8_t, dev, SELF_IN_CH(task_average), 
-																					CH(task_init, task_average)); 
-		uint8_t baseline = *CHAN_IN2(uint8_t, baseline, SELF_IN_CH(task_average), 
-																					CH(task_init, task_average)); 
-		/*Run through and calculate an average + 1-3 quartile spread*/ 
+   	LOG("Computing gesture... \r\n"); 
 		uint8_t samples[NUM_SAMPS]; 
-		uint16_t i, newAvg = 0;
-		for(i = 0; i < NUM_SAMPS; i++)
-			samples[i] = 0; 
-		for(i =0 ; i < NUM_SAMPS; i++){
-			uint8_t curSamp =  *CHAN_IN2(uint8_t, samples[i], CH(task_detect, task_average),
-																												CH(task_init, task_average)); 
-			newAvg += curSamp; 
-			int16_t j,k;
-			uint8_t flag = 0; 
-			for(j = 0; j < i; j++){
-				flag = 0; 
-				if(curSamp < samples[j])
-					break; 
-				if(curSamp >= samples[j] && curSamp < samples[j+1]){
-					for(k = i-1; k >= j; k--)
-						samples[k+1] = samples[k];
-					flag = 1; 
-					break; 
-				}
-			}
-			if(j == 0 && !flag){
-					for(k = i-1; k >= j; k--)
-						samples[k+1] = samples[k];
-			}
-			if(flag)
-				samples[j+1] = curSamp; 
-			else
-				samples[j] = curSamp; 
-		}
+		uint16_t i;
+		for(i =0 ; i < NUM_SAMPS; i++)
+			samples[i] =  *CHAN_IN1(uint8_t, samples[i], CH(task_gestCapture, task_gestCalc)); 
 		
-		LOG("samples = "); 
-		for(i = 0; i < NUM_SAMPS; i++)
-			LOG("%x ", samples[i]); 
-		LOG("\r\n"); 
-		/*Resetting dev here, could use old dev in more complicated fitler*/ 
-		dev = samples[NUM_SAMPS/4 + NUM_SAMPS/3] - samples[NUM_SAMPS/4];
-		newAvg = newAvg / NUM_SAMPS;
-		LOG("Avg = %x, Dev = %x \r\n", newAvg, dev); 
+		/*calculate the gesture, store the resulting gesture type and inc the number of
+		 * gestures seen by writing to the self channel*/ 	
 		
-		CHAN_OUT1(uint8_t, dev, dev, CH(task_average, task_detect)); 
-		CHAN_OUT1(uint8_t, baseline, newAvg, CH(task_average, task_detect)); 
-	  
 		TRANSITION_TO(task_sample);
     
 }

@@ -301,19 +301,20 @@ int8_t  getGesture(void){
 	return DIR_UP;  
 }
 
+/*
 void resetGestureFields(gesture_data_type *gesture){
 	gesture->index = 0; 
 	gesture->total_gestures = 0; 
-	gesture->ud_delta = 0; 
-	gesture->lr_delta = 0; 
-	gesture->ud_count = 0; 
+	gesture->u_data = 0; 
+	gesture->l_data = 0; 
+	gesture->u_data = 0; 
 	gesture->lr_count = 0; 
 	gesture->near_count = 0; 
 	gesture->far_count = 0; 
 	gesture->state = 0; 
 	gesture->motion = DIR_NONE; 
 	return; 
-}
+}*/
 
 void enableGesture(void){
 	uint8_t val, boost, enable, mode,test; 

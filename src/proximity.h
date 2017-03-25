@@ -182,7 +182,7 @@
 #define DEFAULT_GIEN            0       // Disable gesture interrupts
 
 /* Direction definitions */
-enum {
+typedef enum gest_dir_ {
   DIR_NONE,
   DIR_LEFT,
   DIR_RIGHT,
@@ -191,18 +191,23 @@ enum {
   DIR_NEAR,
   DIR_FAR,
   DIR_ALL
-};
+}gest_dir;
 
 /* State definitions */
-enum {
+typedef enum gest_dist_{
   NA_STATE,
   NEAR_STATE,
   FAR_STATE,
   ALL_STATE
-};
+}gest_dist;
+
+/*Gesture result structure*/ 
+typedef struct gesture_t_ {
+	gest_dir dir; 
+}gesture_t;
 
 /* Container for gesture data */
-typedef struct gesture_data_type {
+typedef struct gesture_data_type_ {
     uint8_t u_data[32];
     uint8_t d_data[32];
     uint8_t l_data[32];
@@ -212,16 +217,17 @@ typedef struct gesture_data_type {
     uint8_t in_threshold;
     uint8_t out_threshold;
 
-		int16_t ud_delta; 
-		int16_t lr_delta; 
-		int16_t ud_count; 
-		int16_t lr_count; 
-		int16_t near_count;
-		int16_t far_count; 
-		int16_t state; 
-		int16_t motion; 
-
 } gesture_data_type;
+
+
+		int16_t gesture_ud_delta_; 
+		int16_t gesture_lr_delta_; 
+		int16_t gesture_ud_count_; 
+		int16_t gesture_lr_count_; 
+		int16_t gesture_near_count_;
+		int16_t gesture_far_count_; 
+		int16_t gesture_state_; 
+		int16_t gesture_motion_; 
 
 /*Delay cycles for 8MHz clock to give 250ms delay*/ 
 #define READ_PROX_DELAY_CYCLES 2000000 
@@ -229,6 +235,7 @@ typedef struct gesture_data_type {
 void proximity_init(void); 
 int8_t getGesture(void); 
 void enableGesture(void); 
+void disableGesture(void); 
 void enableProximitySensor(void);
 uint8_t readProximity(void); 
 int8_t anomalyCheck(uint8_t, uint8_t, uint8_t); 
@@ -239,5 +246,7 @@ void writeDataByte(uint8_t reg, uint8_t val);
 void writeSingleByte(uint8_t val);
 uint8_t readDataByte(void);
 void restartTransmit(void);
+void delay(uint32_t cycles); 
+
 
 #endif
