@@ -144,7 +144,8 @@ void init()
 */
 		LOG("Starting init\r\n"); 
 		initializeHardware();
-    burn(400000); 
+    delay(4000); 
+		//burn(400000); 
 		LOG("gesture app booted\r\n");
 }
 
@@ -200,7 +201,7 @@ void i2c_setup(void) {
 
 }
 
-static void delay(uint32_t cycles)
+void delay(uint32_t cycles)
 {
     unsigned i;
     for (i = 0; i < cycles / (1U << 15); ++i)
@@ -301,7 +302,8 @@ void task_sample()
     task_prologue();
 	LOG("running task_sample \r\n");
 	//	delay(READ_PROX_DELAY_CYCLES); 
-		burn(400000); 
+		//burn(400000); 
+			delay(400000); 
 	//	LOG("Delay done \r\n"); 
 		uint16_t index = *CHAN_IN2(uint8_t, index, SELF_IN_CH(task_sample),
 																				CH(task_init,task_sample));
@@ -326,19 +328,20 @@ void task_detect()
     uint8_t dev = *CHAN_IN1(uint8_t, dev,CH(task_average, task_detect));
 		uint8_t sample = *CHAN_IN1(uint8_t, sample, CH(task_sample, task_detect));
 		uint16_t index = *CHAN_IN1(uint16_t, index, CH(task_sample, task_detect)); 
-		int flag = anomalyCheck(sample, baseline, dev+5); 
+		int flag = sample > 10 ? -1 : 0; /* = anomalyCheck(sample, baseline, dev+5);*/
 		uint8_t anoms = *CHAN_IN2(uint8_t, anoms, SELF_IN_CH(task_detect), 
 		 																				 CH(task_init, task_detect)); 
-		LOG("Running detect, index = %u \r\n", index); 
 		if(flag < 0){
+			LOG("ANOMALY DETECTED! Val = %u \r\n", sample);
 			enableGesture(); 
 			int8_t gestVal = getGesture();
-			LOG("ANOMALY DETECTED! Val = %u \r\n", sample);
 			anoms++; 
 		}
 		else{
+			LOG("Disabling Gesture! \r\n"); 
 			disableGesture(); 
 		}
+	//	disableGesture(); 
 		
 		CHAN_OUT1(uint8_t, samples[index], sample, SELF_OUT_CH(task_detect)); 
 		CHAN_OUT1(uint8_t, samples[index], sample, CH(task_detect, task_average)); 
