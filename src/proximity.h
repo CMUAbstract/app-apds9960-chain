@@ -26,8 +26,8 @@
 #define GESTURE_THRESHOLD_OUT   10
 //#define GESTURE_SENSITIVITY_1   50
 //#define GESTURE_SENSITIVITY_2   20
-#define GESTURE_SENSITIVITY_1 30
-#define GESTURE_SENSITIVITY_2 20
+#define GESTURE_SENSITIVITY_1 20
+#define GESTURE_SENSITIVITY_2 10
 
 /* Error code for returned values */
 #define ERROR                   0xFF

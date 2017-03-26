@@ -227,7 +227,7 @@ void task_sample()
 {
   task_prologue();
 	uint8_t proxVal = readProximity();
-	delay(200000); 
+	delay(240000); 
 	uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
@@ -278,6 +278,8 @@ void task_gestCapture()
 			 */
 			CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
 																									CH(task_gestCapture,task_gestCalc)); 
+			/*Add delay before running the gesture calculation*/ 	
+			delay(240000); 
 			TRANSITION_TO(task_gestCalc);
 		}
 		else{
@@ -295,6 +297,7 @@ void task_gestCalc()
 		uint8_t i,j, num_samps = 4;
 		
 		processGestureData(gest_vals); 
+		delay(240000); 
 		gest_dir output = decodeGesture();
 		
 		/*calculate the gesture, store the resulting gesture type and inc the number of
