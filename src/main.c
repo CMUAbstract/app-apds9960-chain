@@ -32,12 +32,6 @@
 #define NUM_BLINKS_PER_TASK       1
 #define WAIT_TICKS                3
 
-#define NUM_AVGS 2 
-#define NUM_SAMPS  8
-#define ALERT_THRESH 30
-#define MIN_DATA_SETS 5
-#define MAX_GESTS 128
-
 #define CNTPWR 1
 
 
@@ -56,8 +50,8 @@ struct msg_self_stale_flag{
 	SELF_FIELD_INITIALIZER \
 } 
 
-struct msg_samples{
-	CHAN_FIELD_ARRAY(uint8_t, samples, NUM_SAMPS); 
+struct msg_gestures{
+	CHAN_FIELD(gesture_data_t, gesture_data_sets); 
 };
 
 struct msg_self_gest_data{
@@ -66,7 +60,7 @@ struct msg_self_gest_data{
 };
 #define FIELD_INIT_msg_self_gest_data { \
 	SELF_FIELD_ARRAY_INITIALIZER(MAX_GESTS), \
-	SELF_FIELD_INITIALIZER \
+	SELF_FIELD_INITIALIZER, \
 }  
 
 struct msg_gest_data{
@@ -86,14 +80,11 @@ CHANNEL(task_sample, task_gestCapture, msg_flag_vals);
 
 SELF_CHANNEL(task_gestCapture, msg_self_stale_flag); 
 
-CHANNEL(task_gestCapture, task_gestCalc, msg_samples); 
+CHANNEL(task_gestCapture, task_gestCalc, msg_gestures); 
 
 SELF_CHANNEL(task_gestCalc, msg_self_gest_data); 
 
-
 volatile unsigned work_x;
-
-
 
 static void burn(uint32_t iters)
 {
@@ -235,12 +226,11 @@ void task_init()
 void task_sample()
 {
   task_prologue();
-//	LOG("running task_sample \r\n");
-	delay(400000); 
 	uint8_t proxVal = readProximity();
-	LOG("ProxVal: %u \r\n", proxVal); 	
+	delay(200000); 
 	uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
+    GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
 		flag = 1; 
 		uint8_t stale = 0; 
 		/*Add power system reconfiguration code here!!  
@@ -252,6 +242,7 @@ void task_sample()
 	}
 	else{
 		disableGesture(); 
+  	GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
 		TRANSITION_TO(task_sample);
 	}
 
@@ -272,23 +263,21 @@ void task_gestCapture()
 		/*Mark that we've started a gesture*/ 
 		CHAN_OUT1(uint8_t, stale, stale, SELF_OUT_CH(task_gestCapture)); 
 		uint8_t num_samps = 0; 
+		gesture_data_t gesture_data_; 
 		if(flag > 0){
 		//	LOG("Enabling gesture \r\n"); 
 		//	enableGesture(); 
 			/*break down get gesture into a loop, loop until we hit the minimum number of data
 			points, o/w fail --> stale gesture data needs to be flushed. */
-			int8_t gestVal = getGesture();
-			num_samps++; 
+			resetGestureFields(&gesture_data_); 
+			int8_t gestVal = getGesture(&gesture_data_, &num_samps);
 		}
-		//LOG("Disabling gesture \r\n"); 
-		//disableGesture(); 	
 		if(num_samps > MIN_DATA_SETS){
 			/*put data into channel, and if failure happens before all of the data is recorded,
 			 * then no transition to gestCalc
 			 */
-		/*	for(uint8_t i = 0; i < MIN_DATA_SETS; i++){
-				CHAN_OUT1(uint8_t, samples[i], samples[i], CH(task_gestCapture, task_gestCalc)); 
-			}*/
+			CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
+																									CH(task_gestCapture,task_gestCalc)); 
 			TRANSITION_TO(task_gestCalc);
 		}
 		else{
@@ -301,10 +290,12 @@ void task_gestCalc()
 {
     task_prologue();
    	LOG("Computing gesture... \r\n"); 
-		uint8_t samples[NUM_SAMPS]; 
-		uint16_t i;
-		for(i =0 ; i < NUM_SAMPS; i++)
-			samples[i] =  *CHAN_IN1(uint8_t, samples[i], CH(task_gestCapture, task_gestCalc)); 
+		gesture_data_t gest_vals = *CHAN_IN1(gesture_data_t, gesture_data_sets,
+																								CH(task_gestCapture, task_gestCalc)); 
+		uint8_t i,j, num_samps = 4;
+		
+		processGestureData(gest_vals); 
+		gest_dir output = decodeGesture();
 		
 		/*calculate the gesture, store the resulting gesture type and inc the number of
 		 * gestures seen by writing to the self channel*/ 	

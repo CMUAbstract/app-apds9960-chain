@@ -17,15 +17,17 @@
 #include <stdint.h>
 
 /* Debug */
-#define DEBUG                   0
+#define DEBUG                   1
 
 /* APDS-9960 I2C address */
 #define APDS9960_I2C_ADDR       0x39
 
 /* Gesture parameters */
 #define GESTURE_THRESHOLD_OUT   10
-#define GESTURE_SENSITIVITY_1   50
-#define GESTURE_SENSITIVITY_2   20
+//#define GESTURE_SENSITIVITY_1   50
+//#define GESTURE_SENSITIVITY_2   20
+#define GESTURE_SENSITIVITY_1 30
+#define GESTURE_SENSITIVITY_2 20
 
 /* Error code for returned values */
 #define ERROR                   0xFF
@@ -183,7 +185,7 @@
 
 /* Direction definitions */
 typedef enum gest_dir_ {
-  DIR_NONE,
+  DIR_NONE = 0,
   DIR_LEFT,
   DIR_RIGHT,
   DIR_UP,
@@ -207,7 +209,7 @@ typedef struct gesture_t_ {
 }gesture_t;
 
 /* Container for gesture data */
-typedef struct gesture_data_type_ {
+typedef struct gesture_data_t_{
     uint8_t u_data[32];
     uint8_t d_data[32];
     uint8_t l_data[32];
@@ -216,28 +218,37 @@ typedef struct gesture_data_type_ {
     uint8_t total_gestures;
     uint8_t in_threshold;
     uint8_t out_threshold;
+}gesture_data_t;
 
-} gesture_data_type;
 
+int32_t gesture_ud_delta_; 
+int32_t gesture_lr_delta_; 
+int32_t gesture_ud_count_; 
+int32_t gesture_lr_count_; 
+int32_t gesture_near_count_;
+int32_t gesture_far_count_; 
+int32_t gesture_state_; 
+int32_t gesture_motion_; 
 
-		int16_t gesture_ud_delta_; 
-		int16_t gesture_lr_delta_; 
-		int16_t gesture_ud_count_; 
-		int16_t gesture_lr_count_; 
-		int16_t gesture_near_count_;
-		int16_t gesture_far_count_; 
-		int16_t gesture_state_; 
-		int16_t gesture_motion_; 
+#define NUM_AVGS 2 
+#define NUM_SAMPS  8
+#define ALERT_THRESH 30
+#define MIN_DATA_SETS 5
+#define MAX_DATA_SETS 32
+#define MAX_GESTS 128
+
 
 /*Delay cycles for 8MHz clock to give 250ms delay*/ 
 #define READ_PROX_DELAY_CYCLES 2000000 
 /*Helper functions for handling proximity sensor*/
 void proximity_init(void); 
-int8_t getGesture(void); 
+int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps);
 void enableGesture(void); 
 void disableGesture(void); 
+void resetGestureFields(gesture_data_t *gesture); 
 void enableProximitySensor(void);
-uint8_t readProximity(void); 
+uint8_t readProximity(void);
+
 int8_t anomalyCheck(uint8_t, uint8_t, uint8_t); 
 void check_mode(void);
 /*A couple of modules to make the msp i2c library feel more like the Arduino wire.h lib
@@ -245,6 +256,7 @@ void check_mode(void);
 void writeDataByte(uint8_t reg, uint8_t val);
 void writeSingleByte(uint8_t val);
 uint8_t readDataByte(void);
+int8_t processGestureData(gesture_data_t gesture_data_);
 void restartTransmit(void);
 void delay(uint32_t cycles); 
 

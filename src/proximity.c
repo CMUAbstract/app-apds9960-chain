@@ -4,8 +4,22 @@
 #include "proximity.h"
 #include "libmspware/driverlib.h"
 
-volatile unsigned char proximityId = 0;
+static uint8_t abs(int8_t input){
+	#if DEBUG
+		LOG("input = %i \r\n", input); 
+	#endif
+	uint8_t output; 
+	if(input < 0){
+		input = 0 - input; 
+	}
+	output = (uint8_t) input; 
+	#if DEBUG
+		LOG("output = %i \r\n", output); 
+	#endif
+	return output; 
+}
 
+volatile unsigned char proximityId = 0;
 void proximity_init(void) {
 	uint8_t proximityID = 0;  
 	uint8_t sensorID = 0; 
@@ -230,7 +244,7 @@ uint8_t readProximity(){
 	return val ; 
 }
 
-int8_t  getGesture(void){
+int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps){
 	/*Test if a gesture is available*/
 //	restartTransmit(); 
   LOG("Inside get gesture! \r\n"); 
@@ -256,69 +270,63 @@ int8_t  getGesture(void){
 	if(!test){
 		return DIR_NONE; 
 	}
-	
+	uint8_t fifo_level = 0;	
+	restartTransmit(); 
+	writeSingleByte(APDS9960_GSTATUS); 
+	uint8_t gstatus = readDataByte(); 
+	LOG("gstatus val 1 = %x \r\n",gstatus); 
+	if((gstatus & APDS9960_GVALID) == APDS9960_GVALID){
 		restartTransmit(); 
-		writeSingleByte(APDS9960_GSTATUS); 
-		uint8_t gstatus = readDataByte(); 
-		LOG("gstatus val 1 = %x \r\n",gstatus); 
-		if((gstatus & APDS9960_GVALID) == APDS9960_GVALID){
+		writeSingleByte(APDS9960_GFLVL); 
+		fifo_level = readDataByte();
+		uint8_t fifo_data[MAX_DATA_SETS * 4], i;
+		LOG("Fifo level = %u \r\n",fifo_level); 
+		if(fifo_level > 1 ){
+			/*Read in all of the bytes from the fifo*/ 
 			restartTransmit(); 
-			writeSingleByte(APDS9960_GFLVL); 
-			uint8_t fifo_level = readDataByte(); 
-			LOG("Fifo level = %u \r\n",fifo_level); 
-			if(fifo_level > 1 ){
-				/*Read in all of the bytes from the fifo*/ 
-				restartTransmit(); 
-				writeSingleByte(APDS9960_GFIFO_U);
-				EUSCI_B_I2C_setMode(EUSCI_B0_BASE, EUSCI_B_I2C_RECEIVE_MODE);
-				EUSCI_B_I2C_masterReceiveStart(EUSCI_B0_BASE);
-				
-				/*Note: we multiply by 4 to get UP,DOWN,LEFT,RIGHT captured*/ 
-				uint8_t fifoContents[128];
-				uint8_t i; 
-				for(i = 0; i < fifo_level * 4; i++){
-					fifoContents[i] =  EUSCI_B_I2C_masterReceiveSingle(EUSCI_B0_BASE);
-				}
-  			EUSCI_B_I2C_masterReceiveMultiByteStop(EUSCI_B0_BASE);
-  			while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE));
-				for(i = 0; i < fifo_level * 4; i++){	
-					if(i == 0 || i == fifo_level || i == fifo_level*2 || i == fifo_level*3){
-						LOG("Got: ");
-					}
-					LOG("%u ", fifoContents[i]); 
-					if(i == fifo_level -1 || i == fifo_level*2 -1 || i == fifo_level*3 -1 || i ==
-								fifo_level*4 -1){
-						LOG("\r\n ");
-					}
-				}
+			writeSingleByte(APDS9960_GFIFO_U);
+			EUSCI_B_I2C_setMode(EUSCI_B0_BASE, EUSCI_B_I2C_RECEIVE_MODE);
+			EUSCI_B_I2C_masterReceiveStart(EUSCI_B0_BASE);
+			
+			/*Note: we multiply by 4 to get UP,DOWN,LEFT,RIGHT captured*/ 
+			for(i = 0; i < fifo_level * 4; i++){
+				fifo_data[i] =  EUSCI_B_I2C_masterReceiveSingle(EUSCI_B0_BASE);
 			}
+			EUSCI_B_I2C_masterReceiveMultiByteStop(EUSCI_B0_BASE);
+			while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE));
+			for(i = 0; i < fifo_level; i++){
+				gesture_data_->u_data[gesture_data_->index] =  fifo_data[i + 0];
+				gesture_data_->d_data[gesture_data_->index] =  fifo_data[i + 1];
+				gesture_data_->l_data[gesture_data_->index] =  fifo_data[i + 2];
+				gesture_data_->r_data[gesture_data_->index] =  fifo_data[i + 3];
+				gesture_data_->index++; 
+				gesture_data_->total_gestures++;
+			}
+			LOG("Fifo level = %u \r\n", fifo_level); 
+			for(i = 0; i < fifo_level * 4; i++){	
+				LOG("%u ", fifo_data[i]); 
+				}
+				LOG("\r\n"); 	
+		}
 		
 			LOG("ESCAPED!\r\n"); 
 		}
 		LOG("ESCAPED ALL!\r\n"); 
 		restartTransmit(); 
 		/*Add in processing stuff here*/ 	
+	*num_samps = fifo_level * 4; 
 	return DIR_UP;  
 }
 
-/*
-void resetGestureFields(gesture_data_type *gesture){
+
+void resetGestureFields(gesture_data_t *gesture){
 	gesture->index = 0; 
 	gesture->total_gestures = 0; 
-	gesture->u_data = 0; 
-	gesture->l_data = 0; 
-	gesture->u_data = 0; 
-	gesture->lr_count = 0; 
-	gesture->near_count = 0; 
-	gesture->far_count = 0; 
-	gesture->state = 0; 
-	gesture->motion = DIR_NONE; 
 	return; 
-}*/
+}
 
 void enableGesture(void){
 	uint8_t val, boost, enable, mode,test; 
-	//	resetGestureFields(); 
 	restartTransmit(); 
 	/*Write 0 to ENABLE*/
 	//writeDataByte(APDS9960_ENABLE, 0); 	
@@ -329,25 +337,25 @@ void enableGesture(void){
 	restartTransmit(); 
 	writeSingleByte(APDS9960_CONFIG2); 
 	val = readDataByte(); 
-	LOG("CONFIG2 = %x \r\n", val); 
+	//LOG("CONFIG2 = %x \r\n", val); 
 	boost &=0x3; 
 	boost = boost << 4; 
 	val &= 0xCF;
 	val |= boost; 
-	LOG("Writing %x to CONFIG2 \r\n", val); 
+	//LOG("Writing %x to CONFIG2 \r\n", val); 
 	restartTransmit(); 
 	writeDataByte(APDS9960_CONFIG2, val); 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_CONFIG2); 
 	test = readDataByte(); 
-	LOG("Confirmed Config2 = %x \r\n",test); 
+	//LOG("Confirmed Config2 = %x \r\n",test); 
 	
 	/*Enable gesture interrupt... for now*/
 	enable = 1;
 	restartTransmit(); 
 	writeSingleByte(APDS9960_GCONF4); 
 	val = readDataByte(); 
-	LOG("GCONF4 = %x \r\n", val); 
+	//LOG("GCONF4 = %x \r\n", val); 
 	enable &= 0x1; 
 	enable = enable << 1; 
 	val &= 0xFD;
@@ -357,42 +365,42 @@ void enableGesture(void){
 	mode  &= 0x1; 
 	val &= 0xFE; 
 	val |= mode;
-	LOG("Writing %x to GCONF4 \r\n", val); 
+	//LOG("Writing %x to GCONF4 \r\n", val); 
 	writeDataByte(APDS9960_GCONF4, val); 
 	/*Enable power*/
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte();
-	LOG("ENABLE = %x \r\n", val); 
+	//LOG("ENABLE = %x \r\n", val); 
 	val |= (1 << POWER);
 	restartTransmit(); 
-	LOG("Writing %x to ENABLE \r\n", val); 
+	//LOG("Writing %x to ENABLE \r\n", val); 
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Enable wait mode*/
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte(); 
-	LOG("ENABLE = %x \r\n", val); 
+	//LOG("ENABLE = %x \r\n", val); 
 	val |= (1 << WAIT); 
 	restartTransmit(); 
-	LOG("Writing %x to ENABLE \r\n", val); 
+	//LOG("Writing %x to ENABLE \r\n", val); 
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Enable proximity mode*/ 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte(); 
-	LOG("ENABLE = %x \r\n", val); 
+	//LOG("ENABLE = %x \r\n", val); 
 	val |= (1 << PROXIMITY); 
 	restartTransmit(); 
-	LOG("Writing %x to ENABLE \r\n", val); 
+	//LOG("Writing %x to ENABLE \r\n", val); 
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Enable gesture mode*/ 
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte(); 
-	LOG("ENABLE = %x \r\n", val); 
+	//LOG("ENABLE = %x \r\n", val); 
 	val |= (1 << GESTURE);
-	LOG("Writing %x to ENABLE \r\n", val); 
+	//LOG("Writing %x to ENABLE \r\n", val); 
 	restartTransmit(); 
 	writeDataByte(APDS9960_ENABLE, val); 
 	restartTransmit(); 
@@ -410,7 +418,7 @@ void disableGesture(){
 	val &= ~(1 << GESTURE); 
 	restartTransmit(); 
 	writeDataByte(APDS9960_ENABLE, val); 
-	LOG("New enable = %x \r\n", val); 
+//	LOG("New enable = %x \r\n", val); 
 	return; 
 }
 
@@ -491,3 +499,246 @@ void restartTransmit(void){
  
 	while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE));
 }
+
+int8_t processGestureData(gesture_data_t gesture_data_) {
+	uint8_t u_first = 0;
+	uint8_t d_first = 0;
+	uint8_t l_first = 0;
+	uint8_t r_first = 0;
+	uint8_t u_last = 0;
+	uint8_t d_last = 0;
+	uint8_t l_last = 0;
+	uint8_t r_last = 0;
+	int ud_ratio_first;
+	int lr_ratio_first;
+	int ud_ratio_last;
+	int lr_ratio_last;
+	int ud_delta;
+	int lr_delta;
+	int i;
+	gesture_ud_delta_ = 0;
+	gesture_lr_delta_ = 0;
+	
+	gesture_ud_count_ = 0;
+	gesture_lr_count_ = 0;
+	
+	gesture_near_count_ = 0;
+	gesture_far_count_ = 0;
+	
+	gesture_state_ = 0;
+	gesture_motion_ = DIR_NONE;
+	
+	LOG("PROCESSING GESTURE \r\n"); 
+	/* If we have less than 4 total gestures, that's not enough */
+	if( gesture_data_.total_gestures <= 4 ) {
+			return -1;
+	}
+	
+	/* Check to make sure our data isn't out of bounds */
+	if( (gesture_data_.total_gestures <= 32) && \
+			(gesture_data_.total_gestures > 0) ) {
+			
+		/* Find the first value in U/D/L/R above the threshold */
+		for( i = 0; i < gesture_data_.total_gestures; i++ ) {
+			if( (gesture_data_.u_data[i] > GESTURE_THRESHOLD_OUT) &&
+					(gesture_data_.d_data[i] > GESTURE_THRESHOLD_OUT) &&
+					(gesture_data_.l_data[i] > GESTURE_THRESHOLD_OUT) &&
+					(gesture_data_.r_data[i] > GESTURE_THRESHOLD_OUT) ) {
+					
+					u_first = gesture_data_.u_data[i];
+					d_first = gesture_data_.d_data[i];
+					l_first = gesture_data_.l_data[i];
+					r_first = gesture_data_.r_data[i];
+					break;
+			}
+		}
+			
+		/* If one of the _first values is 0, then there is no good data */
+		if( (u_first == 0) || (d_first == 0) || \
+				(l_first == 0) || (r_first == 0) ) {
+				
+				return -1;
+		}
+			/* Find the last value in U/D/L/R above the threshold */
+			for( i = gesture_data_.total_gestures - 1; i >= 0; i-- ) {
+#if DEBUG
+				LOG("Finding last: \r\n ");
+				LOG("U: %u \r\n",gesture_data_.u_data[i]);
+				LOG(" D: %u \r\n",gesture_data_.d_data[i]);
+				LOG(" L: %u \r\n", gesture_data_.l_data[i]);
+				LOG(" R: %u \r\n",gesture_data_.r_data[i]);
+#endif
+				if( (gesture_data_.u_data[i] > GESTURE_THRESHOLD_OUT) &&
+						(gesture_data_.d_data[i] > GESTURE_THRESHOLD_OUT) &&
+						(gesture_data_.l_data[i] > GESTURE_THRESHOLD_OUT) &&
+						(gesture_data_.r_data[i] > GESTURE_THRESHOLD_OUT) ) {
+						
+						u_last = gesture_data_.u_data[i];
+						d_last = gesture_data_.d_data[i];
+						l_last = gesture_data_.l_data[i];
+						r_last = gesture_data_.r_data[i];
+						break;
+				}
+      }
+    }
+    
+    /* Calculate the first vs. last ratio of up/down and left/right */
+    ud_ratio_first = ((u_first - d_first) * 100) / (u_first + d_first);
+    lr_ratio_first = ((l_first - r_first) * 100) / (l_first + r_first);
+    ud_ratio_last = ((u_last - d_last) * 100) / (u_last + d_last);
+    lr_ratio_last = ((l_last - r_last) * 100) / (l_last + r_last);
+       
+#if DEBUG
+    LOG("Last Values: ");
+    LOG("U: %u \r\n", u_last);
+    LOG(" D: %u \r\n", d_last);
+    LOG(" L: %u \r\n",l_last);
+    LOG(" R: %u \r\n",r_last);
+
+    LOG("Ratios: \r\n");
+    LOG("UD Fi: %u \r\n",ud_ratio_first);
+    LOG(" UD La: %u \r\n", ud_ratio_last);
+    LOG(" LR Fi: %u \r\n", lr_ratio_first);
+    LOG(" LR La: %u \r\n", lr_ratio_last);
+#endif
+       
+    /* Determine the difference between the first and last ratios */
+    ud_delta = ud_ratio_last - ud_ratio_first;
+    lr_delta = lr_ratio_last - lr_ratio_first;
+    
+#if DEBUG
+    LOG("Deltas: \r\n");
+    LOG("UD: %u \r\n", ud_delta);
+    LOG(" LR: %u \r\n", lr_delta);
+#endif
+
+    /* Accumulate the UD and LR delta values */
+    gesture_ud_delta_ += ud_delta;
+    gesture_lr_delta_ += lr_delta;
+    
+#if DEBUG
+    LOG("Accumulations: \r\n");
+    LOG("UD: %u \r\n", gesture_ud_delta_);
+    LOG(" LR:  %u \r\n", gesture_lr_delta_);
+#endif
+    
+    /* Determine U/D gesture */
+    if( gesture_ud_delta_ >= GESTURE_SENSITIVITY_1 ) {
+        gesture_ud_count_ = 1;
+    } else if( gesture_ud_delta_ <= -GESTURE_SENSITIVITY_1 ) {
+        gesture_ud_count_ = -1;
+    } else {
+        gesture_ud_count_ = 0;
+    }
+    
+    /* Determine L/R gesture */
+    if( gesture_lr_delta_ >= GESTURE_SENSITIVITY_1 ) {
+        gesture_lr_count_ = 1;
+    } else if( gesture_lr_delta_ <= -GESTURE_SENSITIVITY_1 ) {
+        gesture_lr_count_ = -1;
+    } else {
+        gesture_lr_count_ = 0;
+    }
+    
+    /* Determine Near/Far gesture */
+    if( (gesture_ud_count_ == 0) && (gesture_lr_count_ == 0) ) {
+        if( (abs(ud_delta) < GESTURE_SENSITIVITY_2) && \
+            (abs(lr_delta) < GESTURE_SENSITIVITY_2) ) {
+            
+            if( (ud_delta == 0) && (lr_delta == 0) ) {
+                gesture_near_count_++;
+            } else if( (ud_delta != 0) || (lr_delta != 0) ) {
+                gesture_far_count_++;
+            }
+            
+            if( (gesture_near_count_ >= 10) && (gesture_far_count_ >= 2) ) {
+                if( (ud_delta == 0) && (lr_delta == 0) ) {
+                    gesture_state_ = NEAR_STATE;
+                } else if( (ud_delta != 0) && (lr_delta != 0) ) {
+                    gesture_state_ = FAR_STATE;
+                }
+                return 0;
+            }
+        }
+    } else {
+        if( (abs(ud_delta) < GESTURE_SENSITIVITY_2) && \
+            (abs(lr_delta) < GESTURE_SENSITIVITY_2) ) {
+                
+            if( (ud_delta == 0) && (lr_delta == 0) ) {
+                gesture_near_count_++;
+            }
+            
+            if( gesture_near_count_ >= 10 ) {
+                gesture_ud_count_ = 0;
+                gesture_lr_count_ = 0;
+                gesture_ud_delta_ = 0;
+                gesture_lr_delta_ = 0;
+            }
+        }
+    }
+    
+#if DEBUG
+    LOG("UD_CT: %u \r\n",gesture_ud_count_);
+    LOG(" LR_CT: %u \r\n", gesture_lr_count_);
+    LOG(" NEAR_CT: %u \r\n", gesture_near_count_);
+    LOG(" FAR_CT: %u \r\n",gesture_far_count_);
+    LOG("----------\r\n");
+#endif
+    
+    return -1;
+}
+
+gest_dir decodeGesture(void){
+    /* Return if near or far event is detected */
+    if( gesture_state_ == NEAR_STATE ) {
+        gesture_motion_ = DIR_NEAR;
+        return true;
+    } else if ( gesture_state_ == FAR_STATE ) {
+        gesture_motion_ = DIR_FAR;
+        return true;
+    }
+    
+    /* Determine swipe direction */
+    if( (gesture_ud_count_ == -1) && (gesture_lr_count_ == 0) ) {
+        gesture_motion_ = DIR_UP;
+    } else if( (gesture_ud_count_ == 1) && (gesture_lr_count_ == 0) ) {
+        gesture_motion_ = DIR_DOWN;
+    } else if( (gesture_ud_count_ == 0) && (gesture_lr_count_ == 1) ) {
+        gesture_motion_ = DIR_RIGHT;
+    } else if( (gesture_ud_count_ == 0) && (gesture_lr_count_ == -1) ) {
+        gesture_motion_ = DIR_LEFT;
+    } else if( (gesture_ud_count_ == -1) && (gesture_lr_count_ == 1) ) {
+        if( abs(gesture_ud_delta_) > abs(gesture_lr_delta_) ) {
+            gesture_motion_ = DIR_UP;
+        } else {
+            gesture_motion_ = DIR_RIGHT;
+        }
+    } else if( (gesture_ud_count_ == 1) && (gesture_lr_count_ == -1) ) {
+        if( abs(gesture_ud_delta_) > abs(gesture_lr_delta_) ) {
+            gesture_motion_ = DIR_DOWN;
+        } else {
+            gesture_motion_ = DIR_LEFT;
+        }
+    } else if( (gesture_ud_count_ == -1) && (gesture_lr_count_ == -1) ) {
+        if( abs(gesture_ud_delta_) > abs(gesture_lr_delta_) ) {
+            gesture_motion_ = DIR_UP;
+        } else {
+            gesture_motion_ = DIR_LEFT;
+        }
+    } else if( (gesture_ud_count_ == 1) && (gesture_lr_count_ == 1) ) {
+        if( abs(gesture_ud_delta_) > abs(gesture_lr_delta_) ) {
+            gesture_motion_ = DIR_DOWN;
+        } else {
+            gesture_motion_ = DIR_RIGHT;
+        }
+    } else {
+						gesture_motion_ =  DIR_NONE;
+    }
+  #if DEBUG
+		LOG("--------------Dir = %u---------------\r\n", gesture_motion_); 
+//		delay(50000000); 
+	#endif 
+	 
+	 return gesture_motion_;
+}
+
