@@ -5,7 +5,7 @@
 #include <string.h>
 #include <math.h> 
 #include <stdarg.h> 
-
+#include <libmspmath/msp-math.h>
 #include <libwispbase/wisp-base.h>
 #include <libmsp/mem.h>
 #include <libchain/chain.h>
@@ -270,17 +270,16 @@ void task_gestCapture()
 			/*break down get gesture into a loop, loop until we hit the minimum number of data
 			points, o/w fail --> stale gesture data needs to be flushed. */
 			resetGestureFields(&gesture_data_); 
-			int8_t gestVal = getGesture(&gesture_data_, &num_samps);
-		}
+			int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
+				//TODO chan_out the dir as we get it, let it be overwritten, nbd. Then grab it
+				//later if we run out of power. 
+			}
+		LOG("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n", num_samps, MIN_DATA_SETS); 	
 		if(num_samps > MIN_DATA_SETS){
-			/*put data into channel, and if failure happens before all of the data is recorded,
-			 * then no transition to gestCalc
-			 */
-			CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
-																									CH(task_gestCapture,task_gestCalc)); 
-			/*Add delay before running the gesture calculation*/ 	
-			delay(240000); 
-			TRANSITION_TO(task_gestCalc);
+				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
+																											CH(task_gestCapture,task_gestCalc)); 
+			  LOG("transitioning to final calc!\r\n"); 
+				TRANSITION_TO(task_gestCalc);
 		}
 		else{
 			/*Didn't capture enough data to decide*/ 
@@ -296,10 +295,9 @@ void task_gestCalc()
 																								CH(task_gestCapture, task_gestCalc)); 
 		uint8_t i,j, num_samps = 4;
 		
-		processGestureData(gest_vals); 
-		delay(240000); 
 		gest_dir output = decodeGesture();
-		
+		LOG("------------------Dir = %u ---------------", output); 	
+		delay(5000000);
 		/*calculate the gesture, store the resulting gesture type and inc the number of
 		 * gestures seen by writing to the self channel*/ 	
 		

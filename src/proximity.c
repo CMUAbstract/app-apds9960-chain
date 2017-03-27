@@ -244,6 +244,97 @@ uint8_t readProximity(){
 	return val ; 
 }
 
+int8_t  getGestureLoop(gesture_data_t *gesture_data_, uint8_t *num_samps){
+	/*Test if a gesture is available*/
+//	restartTransmit(); 
+  LOG("Inside get gesture! \r\n"); 
+  EUSCI_B_I2C_disable(EUSCI_B0_BASE); 
+	EUSCI_B_I2C_setSlaveAddress(EUSCI_B0_BASE, APDS9960_I2C_ADDR); 
+  while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE)); 
+	EUSCI_B_I2C_setMode(EUSCI_B0_BASE, EUSCI_B_I2C_TRANSMIT_MODE);
+  EUSCI_B_I2C_enable(EUSCI_B0_BASE);
+	writeSingleByte(APDS9960_ID); 
+	uint8_t check = readDataByte();
+	LOG("ID Check = %x \r\n",check); 
+	restartTransmit(); 
+	writeSingleByte(APDS9960_GSTATUS); //Check gstatus!
+	uint8_t test = readDataByte(); 
+	test &= APDS9960_GVALID;
+	LOG("Gvalid  val= %x \r\n",test); 
+	restartTransmit(); 
+	writeSingleByte(APDS9960_ENABLE); 
+	uint8_t enable = readDataByte(); 
+	LOG("enable val = %x \r\n",enable); 
+	enable &= 0x41; 
+	test &= enable; 
+	if(!test){
+		return DIR_NONE; 
+	}
+	uint8_t loop_count = 0; 
+	/*while loop start*/ 
+	while(1){	
+		delay(240000); 
+		uint8_t fifo_level = 0;	
+		restartTransmit(); 
+		writeSingleByte(APDS9960_GSTATUS); 
+		uint8_t gstatus = readDataByte(); 
+		LOG("gstatus val 1 = %x \r\n",gstatus); 
+		if((gstatus & APDS9960_GVALID) == APDS9960_GVALID){
+			restartTransmit(); 
+			writeSingleByte(APDS9960_GFLVL); 
+			fifo_level = readDataByte();
+			uint8_t fifo_data[MAX_DATA_SETS * 4], i;
+			LOG("Fifo level = %u \r\n",fifo_level); 
+			if(fifo_level > 1 ){
+				loop_count++; 
+				/*Read in all of the bytes from the fifo*/ 
+				restartTransmit(); 
+				writeSingleByte(APDS9960_GFIFO_U);
+				EUSCI_B_I2C_setMode(EUSCI_B0_BASE, EUSCI_B_I2C_RECEIVE_MODE);
+				EUSCI_B_I2C_masterReceiveStart(EUSCI_B0_BASE);
+				
+				/*Note: we multiply by 4 to get UP,DOWN,LEFT,RIGHT captured*/ 
+				for(i = 0; i < fifo_level * 4; i++){
+					fifo_data[i] =  EUSCI_B_I2C_masterReceiveSingle(EUSCI_B0_BASE);
+				}
+				EUSCI_B_I2C_masterReceiveMultiByteStop(EUSCI_B0_BASE);
+				while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE));
+				for(i = 0; i < fifo_level; i++){
+					gesture_data_->u_data[gesture_data_->index] =  fifo_data[i + 0];
+					gesture_data_->d_data[gesture_data_->index] =  fifo_data[i + 1];
+					gesture_data_->l_data[gesture_data_->index] =  fifo_data[i + 2];
+					gesture_data_->r_data[gesture_data_->index] =  fifo_data[i + 3];
+					gesture_data_->index++; 
+					gesture_data_->total_gestures++;
+				}
+				LOG("Fifo level = %u \r\n", fifo_level); 
+				for(i = 0; i < fifo_level * 4; i++){	
+					LOG("%u ", fifo_data[i]); 
+					}
+					LOG("\r\n"); 	
+			}
+			
+				LOG("ESCAPED!\r\n"); 
+				restartTransmit();
+				//TODO fix the reversed logic in processGestureData
+				if(processGestureData(*gesture_data_) >= 0){
+						LOG("Decoding gesture! \r\n"); 
+						decodeGesture(); 
+					}
+				LOG("Guess = %u \r\n", gesture_motion_); 
+				gesture_data_->index = 0; 
+				gesture_data_->total_gestures = 0; 
+			}
+			else{
+				delay(FIFO_PAUSE); 
+				LOG("ESCAPED ALL!\r\n"); 
+				*num_samps = loop_count; 
+				return  gesture_motion_; 
+			}
+			
+		}
+}
+
 int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps){
 	/*Test if a gesture is available*/
 //	restartTransmit(); 
@@ -257,6 +348,8 @@ int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps){
 	uint8_t check = readDataByte();
 	LOG("ID Check = %x \r\n",check); 
 	restartTransmit(); 
+	/*while loop start*/ 
+	
 	writeSingleByte(APDS9960_GSTATUS); //Check gstatus!
 	uint8_t test = readDataByte(); 
 	test &= APDS9960_GVALID;
@@ -587,7 +680,7 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
     lr_ratio_first = ((l_first - r_first) * 100) / (l_first + r_first);
     ud_ratio_last = ((u_last - d_last) * 100) / (u_last + d_last);
     lr_ratio_last = ((l_last - r_last) * 100) / (l_last + r_last);
-       
+    LOG("ufirst= %u d_first = %u, ration = %u \r\n", u_first, d_first, ud_ratio_first); 
 #if DEBUG
     LOG("Last Values: ");
     LOG("U: %u \r\n", u_last);
@@ -735,7 +828,7 @@ gest_dir decodeGesture(void){
 						gesture_motion_ =  DIR_NONE;
     }
   #if DEBUG
-		LOG("--------------Dir = %u---------------\r\n", gesture_motion_); 
+//		LOG("--------------Dir = %u---------------\r\n", gesture_motion_); 
 //		delay(50000000); 
 	#endif 
 	 

@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 /* Debug */
-#define DEBUG                   1
+#define DEBUG                   0
 
 /* APDS-9960 I2C address */
 #define APDS9960_I2C_ADDR       0x39
@@ -233,13 +233,14 @@ int32_t gesture_motion_;
 #define NUM_AVGS 2 
 #define NUM_SAMPS  8
 #define ALERT_THRESH 30
-#define MIN_DATA_SETS 5
+#define MIN_DATA_SETS 1
 #define MAX_DATA_SETS 32
 #define MAX_GESTS 128
 
 
 /*Delay cycles for 8MHz clock to give 250ms delay*/ 
 #define READ_PROX_DELAY_CYCLES 2000000 
+#define FIFO_PAUSE 240000
 /*Helper functions for handling proximity sensor*/
 void proximity_init(void); 
 int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps);
@@ -256,7 +257,9 @@ void check_mode(void);
 void writeDataByte(uint8_t reg, uint8_t val);
 void writeSingleByte(uint8_t val);
 uint8_t readDataByte(void);
-int8_t processGestureData(gesture_data_t gesture_data_);
+int8_t processGestureData(gesture_data_t  gesture_data_);
+int8_t  getGestureLoop(gesture_data_t *gesture_data_, uint8_t *num_samps);
+gest_dir decodeGesture(void); 
 void restartTransmit(void);
 void delay(uint32_t cycles); 
 
