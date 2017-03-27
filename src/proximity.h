@@ -17,17 +17,17 @@
 #include <stdint.h>
 
 /* Debug */
-#define DEBUG                   0
+#define DEBUG                   1
 
 /* APDS-9960 I2C address */
 #define APDS9960_I2C_ADDR       0x39
 
 /* Gesture parameters */
 #define GESTURE_THRESHOLD_OUT   10
-//#define GESTURE_SENSITIVITY_1   50
-//#define GESTURE_SENSITIVITY_2   20
-#define GESTURE_SENSITIVITY_1 20
-#define GESTURE_SENSITIVITY_2 10
+#define GESTURE_SENSITIVITY_1   50
+#define GESTURE_SENSITIVITY_2   20
+//#define GESTURE_SENSITIVITY_1 20
+//#define GESTURE_SENSITIVITY_2 10
 
 /* Error code for returned values */
 #define ERROR                   0xFF
@@ -221,14 +221,14 @@ typedef struct gesture_data_t_{
 }gesture_data_t;
 
 
-int32_t gesture_ud_delta_; 
-int32_t gesture_lr_delta_; 
-int32_t gesture_ud_count_; 
-int32_t gesture_lr_count_; 
-int32_t gesture_near_count_;
-int32_t gesture_far_count_; 
-int32_t gesture_state_; 
-int32_t gesture_motion_; 
+int gesture_ud_delta_; 
+int gesture_lr_delta_; 
+int gesture_ud_count_; 
+int gesture_lr_count_; 
+int gesture_near_count_;
+int gesture_far_count_; 
+int gesture_state_; 
+int gesture_motion_; 
 
 #define NUM_AVGS 2 
 #define NUM_SAMPS  8

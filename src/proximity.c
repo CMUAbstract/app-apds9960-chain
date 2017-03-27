@@ -5,49 +5,44 @@
 #include "libmspware/driverlib.h"
 
 static uint8_t abs(int8_t input){
-	#if DEBUG
-		LOG("input = %i \r\n", input); 
-	#endif
 	uint8_t output; 
 	if(input < 0){
 		input = 0 - input; 
 	}
 	output = (uint8_t) input; 
-	#if DEBUG
-		LOG("output = %i \r\n", output); 
-	#endif
 	return output; 
 }
 
 static int16_t abs16(int16_t input){
-	#if DEBUG
-		LOG("input = %i \r\n", input); 
-	#endif
 	int16_t output; 
 	if(input < 0){
 		input = 0 - input; 
 	}
 	output = (int16_t) input; 
-	#if DEBUG
-		LOG("output = %i \r\n", output); 
-	#endif
 	return output; 
 }
 
 static int16_t div(int16_t num, int16_t denom){
 	int sign; 
+#if DEBUG 
+	LOG("NUM = %i DENOM = %i ", num, denom); 
+#endif
 	sign = (num < 0 && denom < 0) || (num > 0 && denom > 0) ; 
 	if(!sign)
 		sign = -1; 
-	LOG("SIGN = %i num = %i denom = %i \r\n", sign, num, denom); 
 	num = abs16(num); 
-	denom = abs(denom); 
+	denom = abs16(denom); 
 	int16_t quo = 0; 
 	while((num -= denom) > 0)
 		quo++; 
+#if DEBUG 
+	LOG("Quo first = %i \r\n", quo); 
+#endif
 
 	quo = quo * sign; 
-	LOG("QUO = %i \r\n", quo); 
+#if DEBUG 
+	LOG("Quo = %i \r\n", quo); 
+#endif
 	return quo; 
 }
 	
@@ -332,7 +327,7 @@ int8_t  getGestureLoop(gesture_data_t *gesture_data_, uint8_t *num_samps){
 				}
 				EUSCI_B_I2C_masterReceiveMultiByteStop(EUSCI_B0_BASE);
 				while(EUSCI_B_I2C_isBusBusy(EUSCI_B0_BASE));
-				for(i = 0; i < fifo_level; i++){
+				for(i = 0; i < fifo_level*4; i+=4){
 					gesture_data_->u_data[gesture_data_->index] =  fifo_data[i + 0];
 					gesture_data_->d_data[gesture_data_->index] =  fifo_data[i + 1];
 					gesture_data_->l_data[gesture_data_->index] =  fifo_data[i + 2];
@@ -340,7 +335,8 @@ int8_t  getGestureLoop(gesture_data_t *gesture_data_, uint8_t *num_samps){
 					gesture_data_->index++; 
 					gesture_data_->total_gestures++;
 				}
-				LOG("Fifo level = %u \r\n", fifo_level); 
+				LOG("Fifo level = %u , total gestures = %u\r\n", fifo_level, 
+																												gesture_data_->total_gestures); 
 				for(i = 0; i < fifo_level * 4; i++){	
 					LOG("%u ", fifo_data[i]); 
 					}
@@ -659,15 +655,20 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 	LOG("PROCESSING GESTURE \r\n"); 
 	/* If we have less than 4 total gestures, that's not enough */
 	if( gesture_data_.total_gestures <= 4 ) {
-			return -1;
+#if DEBUG
+		LOG("TOO FEW GESTURES got %u  \r\n", gesture_data_.total_gestures); 
+#endif
+		return -1;
 	}
 	
 	/* Check to make sure our data isn't out of bounds */
 	if( (gesture_data_.total_gestures <= 32) && \
 			(gesture_data_.total_gestures > 0) ) {
-			
+#if DEBUG 
+		LOG("IN BOUNDS \r\n"); 
+#endif
 		/* Find the first value in U/D/L/R above the threshold */
-		for( i = 0; i < gesture_data_.total_gestures; i++ ) {
+		for( i = 0; i < gesture_data_.total_gestures ; i++ ) {
 			if( (gesture_data_.u_data[i] > GESTURE_THRESHOLD_OUT) &&
 					(gesture_data_.d_data[i] > GESTURE_THRESHOLD_OUT) &&
 					(gesture_data_.l_data[i] > GESTURE_THRESHOLD_OUT) &&
@@ -684,23 +685,43 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 		/* If one of the _first values is 0, then there is no good data */
 		if( (u_first == 0) || (d_first == 0) || \
 				(l_first == 0) || (r_first == 0) ) {
-				
+#if DEBUG
+				LOG("NO GOOD DATA :( \r\n"); 
+#endif
 				return -1;
 		}
+#if DEBUG
+			for( i = 0 ; i < gesture_data_.total_gestures; i++ ) {
+						LOG("U: %u ", gesture_data_.u_data[i]); 
+      }
+			LOG("\r\n"); 
+			for( i = 0 ; i < gesture_data_.total_gestures; i++ ) {
+						LOG("D: %u ", gesture_data_.d_data[i]); 
+      }
+			LOG("\r\n"); 
+			for( i = 0 ; i < gesture_data_.total_gestures; i++ ) {
+						LOG("L: %u ", gesture_data_.l_data[i]); 
+      }
+			LOG("\r\n"); 
+			for( i = 0 ; i < gesture_data_.total_gestures; i++ ) {
+						LOG("R: %u ", gesture_data_.r_data[i]); 
+      }
+			LOG("\r\n"); 
+
+			LOG("total gestures = %u, hunting for last! \r\n", gesture_data_.total_gestures); 
+#endif
 			/* Find the last value in U/D/L/R above the threshold */
 			for( i = gesture_data_.total_gestures - 1; i >= 0; i-- ) {
-#if DEBUG
-				LOG("Finding last: \r\n ");
-				LOG("U: %u \r\n",gesture_data_.u_data[i]);
-				LOG(" D: %u \r\n",gesture_data_.d_data[i]);
-				LOG(" L: %u \r\n", gesture_data_.l_data[i]);
-				LOG(" R: %u \r\n",gesture_data_.r_data[i]);
-#endif
 				if( (gesture_data_.u_data[i] > GESTURE_THRESHOLD_OUT) &&
 						(gesture_data_.d_data[i] > GESTURE_THRESHOLD_OUT) &&
 						(gesture_data_.l_data[i] > GESTURE_THRESHOLD_OUT) &&
 						(gesture_data_.r_data[i] > GESTURE_THRESHOLD_OUT) ) {
-						
+#if DEBUG
+						LOG("U: %u \r\n", gesture_data_.u_data[i]); 
+						LOG("D: %u \r\n", gesture_data_.d_data[i]); 
+						LOG("L: %u \r\n", gesture_data_.l_data[i]); 
+						LOG("R: %u \r\n", gesture_data_.r_data[i]); 
+#endif
 						u_last = gesture_data_.u_data[i];
 						d_last = gesture_data_.d_data[i];
 						l_last = gesture_data_.l_data[i];
@@ -708,11 +729,31 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 						break;
 				}
       }
+#if DEBUG
+						LOG("Found first: \r\n"); 
+						LOG(" U: %u \r\n", u_first);
+						LOG(" D: %u \r\n",d_first);
+						LOG(" L: %u \r\n",l_first );
+						LOG(" R: %u \r\n",r_first);
+
+						LOG("Found last: \r\n ");
+						/*
+						LOG("U: %u \r\n",gesture_data_.u_data[i]);
+						LOG(" D: %u \r\n",gesture_data_.d_data[i]);
+						LOG(" L: %u \r\n", gesture_data_.l_data[i]);
+						LOG(" R: %u \r\n",gesture_data_.r_data[i]);
+						*/
+						LOG("U: %u \r\n", u_last);
+						LOG(" D: %u \r\n",d_last);
+						LOG(" L: %u \r\n",l_last );
+						LOG(" R: %u \r\n",r_last);
+
+#endif
     }
     
     /* Calculate the first vs. last ratio of up/down and left/right */
 	int16_t num, denom; 
-	LOG("calculatng ratios \r\n"); 	
+	LOG("calculating ratios \r\n"); 	
 	num = (u_first - d_first)*100; denom = (u_first + d_first); 
 	ud_ratio_first = div(num, denom); 
 	
@@ -734,10 +775,10 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
     LOG(" R: %u \r\n",r_last);
 
     LOG("Ratios: \r\n");
-    LOG("UD Fi: %u \r\n",ud_ratio_first);
-    LOG(" UD La: %u \r\n", ud_ratio_last);
-    LOG(" LR Fi: %u \r\n", lr_ratio_first);
-    LOG(" LR La: %u \r\n", lr_ratio_last);
+    LOG(" UD Fi: %i \r\n",ud_ratio_first);
+    LOG(" UD La: %i \r\n", ud_ratio_last);
+    LOG(" LR Fi: %i \r\n", lr_ratio_first);
+    LOG(" LR La: %i \r\n", lr_ratio_last);
 #endif
        
     /* Determine the difference between the first and last ratios */
@@ -746,8 +787,8 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
     
 #if DEBUG
     LOG("Deltas: \r\n");
-    LOG("UD: %u \r\n", ud_delta);
-    LOG(" LR: %u \r\n", lr_delta);
+    LOG("UD: %i \r\n", ud_delta);
+    LOG(" LR: %i \r\n", lr_delta);
 #endif
 
     /* Accumulate the UD and LR delta values */
@@ -756,8 +797,8 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
     
 #if DEBUG
     LOG("Accumulations: \r\n");
-    LOG("UD: %u \r\n", gesture_ud_delta_);
-    LOG(" LR:  %u \r\n", gesture_lr_delta_);
+    LOG("UD: %i \r\n", gesture_ud_delta_);
+    LOG(" LR:  %i \r\n", gesture_lr_delta_);
 #endif
     
     /* Determine U/D gesture */
@@ -816,10 +857,10 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
     }
     
 #if DEBUG
-    LOG("UD_CT: %u \r\n",gesture_ud_count_);
-    LOG(" LR_CT: %u \r\n", gesture_lr_count_);
-    LOG(" NEAR_CT: %u \r\n", gesture_near_count_);
-    LOG(" FAR_CT: %u \r\n",gesture_far_count_);
+    LOG("UD_CT: %i \r\n",gesture_ud_count_);
+    LOG(" LR_CT: %i \r\n", gesture_lr_count_);
+    LOG(" NEAR_CT: %i \r\n", gesture_near_count_);
+    LOG(" FAR_CT: %i \r\n",gesture_far_count_);
     LOG("----------\r\n");
 #endif
     

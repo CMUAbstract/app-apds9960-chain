@@ -55,12 +55,12 @@ struct msg_gestures{
 };
 
 struct msg_self_gest_data{
-	CHAN_FIELD_ARRAY(gesture_t, gestures, MAX_GESTS); 
 	CHAN_FIELD(uint16_t, num_gests); 
+	CHAN_FIELD_ARRAY(gesture_t, gestures, MAX_GESTS); 
 };
 #define FIELD_INIT_msg_self_gest_data { \
-	SELF_FIELD_ARRAY_INITIALIZER(MAX_GESTS), \
 	SELF_FIELD_INITIALIZER, \
+	SELF_FIELD_ARRAY_INITIALIZER(MAX_GESTS), \
 }  
 
 struct msg_gest_data{
