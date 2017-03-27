@@ -99,12 +99,8 @@ void init()
 {
     WISP_init();
 		
-/*   GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
+   GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
-#if defined(PORT_LED_3)
-    GPIO(PORT_LED_3, DIR) |= BIT(PIN_LED_3);
-#endif
-*/
     INIT_CONSOLE();
 
     __enable_interrupt();
@@ -119,6 +115,52 @@ void init()
 		LOG("gesture app booted\r\n");
 }
 
+/**
+ * @brief represents the gesture captured
+ * @details DIR_NONE =  111
+ 						DIR_LEFT =  001
+						DIR_RIGHT = 010 
+						DIR_UP =    011
+						DIR_DOWN =  100
+		These values will get held for a little while, and then revert to 000. 
+*/
+
+
+void encode_IO(gest_dir val){
+	switch(val){
+		case DIR_NONE: 
+			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
+			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
+			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_5); 
+			break; 
+		case DIR_LEFT: 
+			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
+			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
+			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			break; 
+		case DIR_RIGHT: 
+			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
+			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
+			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			break; 
+		case DIR_UP: 
+			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
+			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
+			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			break; 
+		case DIR_DOWN: 
+			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
+			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
+			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_5); 
+			break; 
+	}
+	delay(GESTURE_HOLD_TIME); 
+		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
+		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
+		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+
+	return; 
+}
 
 void i2c_setup(void) {
   /*
@@ -297,6 +339,7 @@ void task_gestCalc()
 		
 		gest_dir output = decodeGesture();
 		LOG("------------------Dir = %u ---------------", output); 	
+		//encode_IO(output); 
 		delay(5000000);
 		/*calculate the gesture, store the resulting gesture type and inc the number of
 		 * gestures seen by writing to the self channel*/ 	

@@ -241,6 +241,7 @@ int gesture_motion_;
 /*Delay cycles for 8MHz clock to give 250ms delay*/ 
 #define READ_PROX_DELAY_CYCLES 2000000 
 #define FIFO_PAUSE 240000
+#define GESTURE_HOLD_TIME  4800000
 /*Helper functions for handling proximity sensor*/
 void proximity_init(void); 
 int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps);
@@ -262,6 +263,5 @@ int8_t  getGestureLoop(gesture_data_t *gesture_data_, uint8_t *num_samps);
 gest_dir decodeGesture(void); 
 void restartTransmit(void);
 void delay(uint32_t cycles); 
-
 
 #endif

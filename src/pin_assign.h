@@ -34,10 +34,10 @@
 #define     PORT_LED_3           1
 #define     PIN_LED_3            0
 
-#define     PORT_AUX            3
-#define     PIN_AUX_1           4
-#define     PIN_AUX_2           5
-
+#define     PORT_AUX            1
+#define     PIN_AUX_3           3
+#define     PIN_AUX_4           4
+#define			PIN_AUX_5					  5	
 
 #define     PORT_AUX3           1
 #define     PIN_AUX_3           4

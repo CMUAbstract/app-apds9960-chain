@@ -1,6 +1,10 @@
 #include <libmsp/mem.h>
+#include <libmsp/periph.h> 
+#include <stdint.h> 
+#include <stdio.h> 
+#include <libwispbase/wisp-base.h> 
+#include <libchain/chain.h>
 #include <libio/log.h>
-
 #include "proximity.h"
 #include "libmspware/driverlib.h"
 
@@ -45,7 +49,7 @@ static int16_t div(int16_t num, int16_t denom){
 #endif
 	return quo; 
 }
-	
+
 
 volatile unsigned char proximityId = 0;
 void proximity_init(void) {
