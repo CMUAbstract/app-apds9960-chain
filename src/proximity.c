@@ -19,6 +19,39 @@ static uint8_t abs(int8_t input){
 	return output; 
 }
 
+static int16_t abs16(int16_t input){
+	#if DEBUG
+		LOG("input = %i \r\n", input); 
+	#endif
+	int16_t output; 
+	if(input < 0){
+		input = 0 - input; 
+	}
+	output = (int16_t) input; 
+	#if DEBUG
+		LOG("output = %i \r\n", output); 
+	#endif
+	return output; 
+}
+
+static int16_t div(int16_t num, int16_t denom){
+	int sign; 
+	sign = (num < 0 && denom < 0) || (num > 0 && denom > 0) ; 
+	if(!sign)
+		sign = -1; 
+	LOG("SIGN = %i num = %i denom = %i \r\n", sign, num, denom); 
+	num = abs16(num); 
+	denom = abs(denom); 
+	int16_t quo = 0; 
+	while((num -= denom) > 0)
+		quo++; 
+
+	quo = quo * sign; 
+	LOG("QUO = %i \r\n", quo); 
+	return quo; 
+}
+	
+
 volatile unsigned char proximityId = 0;
 void proximity_init(void) {
 	uint8_t proximityID = 0;  
@@ -602,6 +635,8 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 	uint8_t d_last = 0;
 	uint8_t l_last = 0;
 	uint8_t r_last = 0;
+	
+	
 	int ud_ratio_first;
 	int lr_ratio_first;
 	int ud_ratio_last;
@@ -676,11 +711,21 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
     }
     
     /* Calculate the first vs. last ratio of up/down and left/right */
-    ud_ratio_first = ((u_first - d_first) * 100) / (u_first + d_first);
-    lr_ratio_first = ((l_first - r_first) * 100) / (l_first + r_first);
-    ud_ratio_last = ((u_last - d_last) * 100) / (u_last + d_last);
-    lr_ratio_last = ((l_last - r_last) * 100) / (l_last + r_last);
-    LOG("ufirst= %u d_first = %u, ration = %u \r\n", u_first, d_first, ud_ratio_first); 
+	int16_t num, denom; 
+	LOG("calculatng ratios \r\n"); 	
+	num = (u_first - d_first)*100; denom = (u_first + d_first); 
+	ud_ratio_first = div(num, denom); 
+	
+	num = (l_first - r_first)*100; denom = (l_first + r_first); 
+	lr_ratio_first = div(num, denom); 
+	
+	num = (u_last - d_last)*100; denom = (u_last + d_last); 
+	ud_ratio_last = div(num, denom); 
+	
+	num = (l_last - r_last)*100; denom = (l_last + r_last); 
+	lr_ratio_last = div(num, denom); 
+
+
 #if DEBUG
     LOG("Last Values: ");
     LOG("U: %u \r\n", u_last);
@@ -696,7 +741,7 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 #endif
        
     /* Determine the difference between the first and last ratios */
-    ud_delta = ud_ratio_last - ud_ratio_first;
+		ud_delta = ud_ratio_last - ud_ratio_first;
     lr_delta = lr_ratio_last - lr_ratio_first;
     
 #if DEBUG
