@@ -98,17 +98,7 @@ void initializeHardware(void);
 void init()
 {
     WISP_init();
-		
-   GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
-    GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
-    INIT_CONSOLE();
-
     __enable_interrupt();
-/*
-#if defined(PORT_LED_3) // when available, this LED indicates power-on
-    GPIO(PORT_LED_3, OUT) |= BIT(PIN_LED_3);
-#endif
-*/
 		LOG("Starting init\r\n"); 
 		initializeHardware();
 		delay(4000); 
@@ -129,35 +119,35 @@ void init()
 void encode_IO(gest_dir val){
 	switch(val){
 		case DIR_NONE: 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
 			break; 
 		case DIR_LEFT: 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 			break; 
 		case DIR_RIGHT: 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 			break; 
 		case DIR_UP: 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 			break; 
 		case DIR_DOWN: 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
 			break; 
 	}
 	delay(GESTURE_HOLD_TIME); 
-		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
-		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
-		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 
 	return; 
 }
@@ -204,19 +194,6 @@ void initializeHardware()
 #endif
 
 #if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
-    /*P1DIR |= BIT0 | BIT1 | BIT2;
-    P1OUT &= ~(BIT0 | BIT1 | BIT2);
-    P2DIR |= BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7;
-    P2OUT &= ~(BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7);
-    P3DIR |= BIT6 | BIT7;
-    P3OUT &= ~(BIT6 | BIT7);
-    P4DIR |= BIT0 | BIT1 | BIT4;
-    P4OUT &= ~(BIT0 | BIT1 | BIT4);
-    PJDIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
-    PJOUT |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;*/
-#endif
-
-#if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
     CSCTL0_H = 0xA5;
     CSCTL1 = DCOFSEL_6; //8MHz
     CSCTL3 = DIVA_0 + DIVS_0 + DIVM_0;
@@ -244,15 +221,6 @@ void task_init()
     task_prologue();
     LOG("init\r\n");
     // Solid flash signifying beginning of task
-    #ifdef CNTPWR
-		GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
-    GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
-    burn(INIT_TASK_DURATION_ITERS);
-    GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
-    GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
-		delay(INIT_TASK_DURATION_ITERS);
-   	#endif
-		
 		//Init task_gestCalc fields
 		uint8_t i; 
 		for(i = 0; i < MAX_GESTS; i++){
@@ -272,7 +240,6 @@ void task_sample()
 	delay(240000); 
 	uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
-    GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
 		flag = 1; 
 		uint8_t stale = 0; 
 		/*Add power system reconfiguration code here!!  
@@ -284,7 +251,6 @@ void task_sample()
 	}
 	else{
 		disableGesture(); 
-  	GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
 		TRANSITION_TO(task_sample);
 	}
 
