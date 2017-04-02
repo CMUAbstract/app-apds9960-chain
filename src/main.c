@@ -243,16 +243,6 @@ void task_init()
 {
     task_prologue();
     LOG("init\r\n");
-    // Solid flash signifying beginning of task
-  /*  #ifdef CNTPWR
-		GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
-    GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
-    burn(INIT_TASK_DURATION_ITERS);
-    GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
-    GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
-		delay(INIT_TASK_DURATION_ITERS);
-   	#endif
-		*/
 		//Init task_gestCalc fields
 		uint8_t i; 
 		for(i = 0; i < MAX_GESTS; i++){
@@ -262,7 +252,12 @@ void task_init()
 		uint16_t gestInit = 0; 
 		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc)); 
 		/*Set initial power config here, don't forget a delay!*/ 
-  	TRANSITION_TO(task_sample);
+#ifdef MEAS_PROX
+		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3); 
+		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
+#endif
+
+		TRANSITION_TO(task_sample);
 }
 
 void task_sample()
@@ -281,8 +276,15 @@ void task_sample()
 			Switch to high power bank, let's assume that we precharged the banks in the past*/ 
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture)); 
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture)); 
+#ifdef MEAS_PROX
+		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_4); 
+		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_4); 
+#endif
+#ifdef MEAS_GEST
+		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3); 
+		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
+#endif
 		enableGesture(); 
-		GPIO(PORT_AUX, DIR) |= BIT(PIN_AUX_3);
 		TRANSITION_TO(task_gestCapture);
 	}
 	else{
@@ -344,6 +346,10 @@ void task_gestCalc()
 		uint8_t i,j, num_samps = 4;
 		
 		gest_dir output = decodeGesture();
+#ifdef MEAS_GEST
+		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_4); 
+		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_4); 
+#endif
 		LOG("------------------Dir = %u ---------------", output); 	
 		//encode_IO(output); 
 		delay(5000000);
