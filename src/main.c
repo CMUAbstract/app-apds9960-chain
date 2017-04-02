@@ -268,7 +268,9 @@ void task_init()
 void task_sample()
 {
   task_prologue();
+//	LOG("In sample! \r\n"); 
 	uint8_t proxVal = readProximity();
+//	LOG("proxVal = %u \r\n",proxVal); 
 	delay(240000); 
 	uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
@@ -280,13 +282,15 @@ void task_sample()
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture)); 
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture)); 
 		enableGesture(); 
+		GPIO(PORT_AUX, DIR) |= BIT(PIN_AUX_3);
 		TRANSITION_TO(task_gestCapture);
 	}
 	else{
 		disableGesture(); 
-  	/*GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
+  	
+		/*GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);*/
 		TRANSITION_TO(task_sample);
-	*/
+	
 	}
 
 }
@@ -299,6 +303,7 @@ void task_gestCapture()
 		uint8_t stale = *CHAN_IN2(uint8_t, stale, SELF_IN_CH(task_gestCapture),
 															CH(task_sample, task_gestCapture));
 		if(stale){
+			LOG("Stale! \r\n"); 
 			/*Have to hope that these occur atomically... */ 
 			TRANSITION_TO(task_sample); 
 		}
@@ -342,6 +347,8 @@ void task_gestCalc()
 		LOG("------------------Dir = %u ---------------", output); 	
 		//encode_IO(output); 
 		delay(5000000);
+		delay(5000000);
+	
 		/*calculate the gesture, store the resulting gesture type and inc the number of
 		 * gestures seen by writing to the self channel*/ 	
 		

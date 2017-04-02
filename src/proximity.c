@@ -349,6 +349,13 @@ int8_t  getGestureLoop(gesture_data_t *gesture_data_, uint8_t *num_samps){
 			
 				LOG("ESCAPED!\r\n"); 
 				restartTransmit();
+				writeSingleByte(APDS9960_GCONF1); 
+				fifo_level = readDataByte(); 
+				LOG("GCONF1 = %x \r\n", fifo_level); 
+				restartTransmit(); 
+				writeSingleByte(APDS9960_GEXTH); 
+				fifo_level = readDataByte(); 
+				LOG("GEXTH = %u \r\n", fifo_level); 
 				//TODO fix the reversed logic in processGestureData
 				if(processGestureData(*gesture_data_) >= 0){
 						LOG("Decoding gesture! \r\n"); 
@@ -459,7 +466,8 @@ void enableGesture(void){
 	writeDataByte(APDS9960_WTIME,0xFF); 
 	writeDataByte(APDS9960_PPULSE, DEFAULT_GESTURE_PPULSE); 
 	/*Set LED boost*/
-	boost = LED_BOOST_300; 
+	//boost = LED_BOOST_300; 
+	boost = LED_BOOST_200;
 	restartTransmit(); 
 	writeSingleByte(APDS9960_CONFIG2); 
 	val = readDataByte(); 
@@ -655,7 +663,7 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 	
 	gesture_state_ = 0;
 	gesture_motion_ = DIR_NONE;
-	
+	__delay_cycles(200); 	
 	LOG("PROCESSING GESTURE \r\n"); 
 	/* If we have less than 4 total gestures, that's not enough */
 	if( gesture_data_.total_gestures <= 4 ) {
@@ -804,7 +812,8 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
     LOG("UD: %i \r\n", gesture_ud_delta_);
     LOG(" LR:  %i \r\n", gesture_lr_delta_);
 #endif
-    
+   
+	 
     /* Determine U/D gesture */
     if( gesture_ud_delta_ >= GESTURE_SENSITIVITY_1 ) {
         gesture_ud_count_ = 1;
@@ -882,7 +891,7 @@ gest_dir decodeGesture(void){
     }
     
     /* Determine swipe direction */
-    if( (gesture_ud_count_ == -1) && (gesture_lr_count_ == 0) ) {
+  /*  if( (gesture_ud_count_ == -1) && (gesture_lr_count_ == 0) ) {
         gesture_motion_ = DIR_UP;
     } else if( (gesture_ud_count_ == 1) && (gesture_lr_count_ == 0) ) {
         gesture_motion_ = DIR_DOWN;
@@ -916,7 +925,17 @@ gest_dir decodeGesture(void){
         }
     } else {
 						gesture_motion_ =  DIR_NONE;
-    }
+    }*/
+		/*New way to determine swipe direction... */ 
+		if( abs16(gesture_ud_delta_) > abs16(gesture_lr_delta_)){
+			gesture_motion_ = gesture_ud_delta_ > 0 ? DIR_DOWN : DIR_UP; 
+		}
+		else if(gesture_lr_delta_ != 0){
+			gesture_motion_ = gesture_lr_delta_ > 0 ? DIR_LEFT : DIR_RIGHT; 
+		}
+		else{
+			gesture_motion_ = DIR_NONE; 
+		}
   #if DEBUG
 //		LOG("--------------Dir = %u---------------\r\n", gesture_motion_); 
 //		delay(50000000); 
