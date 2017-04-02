@@ -27,7 +27,7 @@
 #define     PIN_AUX_3           4
 
 #elif defined(BOARD_MSP_TS430)
-
+/*
 #define     PORT_LED_1           1
 #define     PIN_LED_1            0
 #define     PORT_LED_2           4
@@ -53,6 +53,12 @@
 #define     PIN_AUX_3           3
 #define     PIN_AUX_4           4
 #define			PIN_AUX_5					  5	
+*/
+#define     PORT_AUX            3
+#define     PIN_AUX_3           4
+#define     PIN_AUX_4           5
+#define			PIN_AUX_5					  6	
+
 
 
 #elif defined(BOARD_SPRITE_APP_SOCKET_RHA)

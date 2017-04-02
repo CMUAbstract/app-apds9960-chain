@@ -5,7 +5,7 @@
 #include <string.h>
 #include <math.h> 
 #include <stdarg.h> 
-#include <libmspmath/msp-math.h>
+//#include <libmspmath/msp-math.h>
 #include <libwispbase/wisp-base.h>
 #include <libmsp/mem.h>
 #include <libchain/chain.h>
@@ -98,10 +98,10 @@ void initializeHardware(void);
 void init()
 {
     WISP_init();
-		
+/*		
    GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
-    INIT_CONSOLE();
+*/    INIT_CONSOLE();
 
     __enable_interrupt();
 /*
@@ -244,7 +244,7 @@ void task_init()
     task_prologue();
     LOG("init\r\n");
     // Solid flash signifying beginning of task
-    #ifdef CNTPWR
+  /*  #ifdef CNTPWR
 		GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
     burn(INIT_TASK_DURATION_ITERS);
@@ -252,7 +252,7 @@ void task_init()
     GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
 		delay(INIT_TASK_DURATION_ITERS);
    	#endif
-		
+		*/
 		//Init task_gestCalc fields
 		uint8_t i; 
 		for(i = 0; i < MAX_GESTS; i++){
@@ -272,7 +272,7 @@ void task_sample()
 	delay(240000); 
 	uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
-    GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
+    //GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
 		flag = 1; 
 		uint8_t stale = 0; 
 		/*Add power system reconfiguration code here!!  
@@ -284,8 +284,9 @@ void task_sample()
 	}
 	else{
 		disableGesture(); 
-  	GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
+  	/*GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
 		TRANSITION_TO(task_sample);
+	*/
 	}
 
 }
