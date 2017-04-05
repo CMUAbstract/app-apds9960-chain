@@ -5,12 +5,12 @@
 #include <string.h>
 #include <math.h> 
 #include <stdarg.h> 
-//#include <libmspmath/msp-math.h>
 #include <libwispbase/wisp-base.h>
 #include <libmsp/mem.h>
 #include <libchain/chain.h>
 #include <libio/log.h>
 #include "libmspware/driverlib.h"
+#include <libcapybara/reconfig.h> 
 #include "proximity.h"
 #include "pins.h"
 
@@ -33,6 +33,12 @@
 #define WAIT_TICKS                3
 
 #define CNTPWR 1
+#define DEFAULT_CFG 							0b1111 
+
+//Define the current cap configuration as well as precharge status
+__nv capybara_bankmask_t curbankcfg = DEFAULT_CFG;	
+
+__nv prechg_status_t curprchg;
 
 
 // If you link-in wisp-base, then you have to define some symbols.
@@ -101,7 +107,11 @@ void init()
 /*		
    GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
-*/    INIT_CONSOLE();
+*/   
+	//Configure capybara banks to desired setting 
+	capybara_config_banks(curbankcfg); 
+
+	INIT_CONSOLE();
 
     __enable_interrupt();
 /*
@@ -109,10 +119,12 @@ void init()
     GPIO(PORT_LED_3, OUT) |= BIT(PIN_LED_3);
 #endif
 */
-		LOG("Starting init\r\n"); 
+			LOG("Starting init\r\n"); 
 		initializeHardware();
 		delay(4000); 
-		LOG("gesture app booted\r\n");
+	//	while(1){
+			LOG("gesture app booted\r\n");
+	//		}
 }
 
 /**
@@ -129,35 +141,35 @@ void init()
 void encode_IO(gest_dir val){
 	switch(val){
 		case DIR_NONE: 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
 			break; 
 		case DIR_LEFT: 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 			break; 
 		case DIR_RIGHT: 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 			break; 
 		case DIR_UP: 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 			break; 
 		case DIR_DOWN: 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
-			GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
-			GPIO(PORT_AUX, OUT) |= BIT(PIN_AUX_5); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
 			break; 
 	}
 	delay(GESTURE_HOLD_TIME); 
-		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_3); 
-		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_4); 
-		GPIO(PORT_AUX, OUT) &= ~BIT(PIN_AUX_5); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 
 	return; 
 }
@@ -236,7 +248,9 @@ void initializeHardware()
 		proximity_init(); 
 		/*Now enable the proximity sensor*/
 		enableProximitySensor(); 
-    LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
+    //while(1){
+		LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
+	//	}
 }
 
 void task_init()
@@ -265,7 +279,7 @@ void task_sample()
   task_prologue();
 //	LOG("In sample! \r\n"); 
 	uint8_t proxVal = readProximity();
-//	LOG("proxVal = %u \r\n",proxVal); 
+	//LOG("proxVal = %u \r\n",proxVal); 
 	delay(240000); 
 	uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){

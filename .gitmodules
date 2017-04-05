@@ -13,9 +13,6 @@
 [submodule "ext/libwispbase"]
 	path = ext/libwispbase
 	url = /afs/ece.cmu.edu/project/abstract/repos/wisp5
-[submodule "ext/libmsp"]
-	path = ext/libmsp
-	url = /afs/ece.cmu.edu/project/abstract/repos/libmsp
 [submodule "ext/libmspconsole"]
 	path = ext/libmspconsole
 	url = /afs/ece.cmu.edu/project/abstract/repos/libmspconsole
@@ -28,3 +25,6 @@
 [submodule "ext/libmspmath"]
 	path = ext/libmspmath
 	url = git://github.com/CMUAbstract/libmspmath.git
+[submodule "libmsp2"]
+	path = ext/libmsp
+	url = /afs/ece.cmu.edu/project/abstract/repos/libmsp

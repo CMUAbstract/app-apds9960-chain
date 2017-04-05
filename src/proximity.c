@@ -702,7 +702,7 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 #endif
 				return -1;
 		}
-#if DEBUG
+#if MY_DEBUG
 			for( i = 0 ; i < gesture_data_.total_gestures; i++ ) {
 						LOG("U: %u ", gesture_data_.u_data[i]); 
       }
@@ -728,7 +728,7 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 						(gesture_data_.d_data[i] > GESTURE_THRESHOLD_OUT) &&
 						(gesture_data_.l_data[i] > GESTURE_THRESHOLD_OUT) &&
 						(gesture_data_.r_data[i] > GESTURE_THRESHOLD_OUT) ) {
-#if DEBUG
+#if MY_DEBUG
 						LOG("U: %u \r\n", gesture_data_.u_data[i]); 
 						LOG("D: %u \r\n", gesture_data_.d_data[i]); 
 						LOG("L: %u \r\n", gesture_data_.l_data[i]); 
@@ -741,7 +741,7 @@ int8_t processGestureData(gesture_data_t gesture_data_) {
 						break;
 				}
       }
-#if DEBUG
+#if MY_DEBUG
 						LOG("Found first: \r\n"); 
 						LOG(" U: %u \r\n", u_first);
 						LOG(" D: %u \r\n",d_first);
