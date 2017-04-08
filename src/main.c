@@ -33,6 +33,7 @@
 #define WAIT_TICKS                3
 
 #define CNTPWR 1
+#define LOG_PROX 1
 #define DEFAULT_CFG 							0b1111 
 
 //Define the current cap configuration as well as precharge status
@@ -279,7 +280,9 @@ void task_sample()
   task_prologue();
 //	LOG("In sample! \r\n"); 
 	uint8_t proxVal = readProximity();
-	//LOG("proxVal = %u \r\n",proxVal); 
+#if LOG_PROX
+	LOG("proxVal = %u \r\n",proxVal); 
+#endif
 	delay(240000); 
 	uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
@@ -321,6 +324,7 @@ void task_gestCapture()
 		if(stale){
 			LOG("Stale! \r\n"); 
 			/*Have to hope that these occur atomically... */ 
+			//disableGesture(); 
 			TRANSITION_TO(task_sample); 
 		}
 		stale = 1; 
