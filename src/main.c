@@ -110,7 +110,7 @@ void init()
     GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
 */   
 	//Configure capybara banks to desired setting 
-	capybara_config_banks(curbankcfg); 
+//	capybara_config_banks(curbankcfg); 
 
 	INIT_CONSOLE();
 
@@ -249,7 +249,9 @@ void initializeHardware()
 		proximity_init(); 
 		/*Now enable the proximity sensor*/
 		enableProximitySensor(); 
-    //while(1){
+   	enableGesture();  
+		disableGesture(); 
+		//while(1){
 		LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
 	//	}
 }
@@ -278,7 +280,7 @@ void task_init()
 void task_sample()
 {
   task_prologue();
-//	LOG("In sample! \r\n"); 
+	LOG("In sample! \r\n"); 
 	uint8_t proxVal = readProximity();
 #if LOG_PROX
 	LOG("proxVal = %u \r\n",proxVal); 
@@ -301,10 +303,12 @@ void task_sample()
 		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3); 
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
 #endif
-		enableGesture(); 
+		
+		reenableGesture();  
 		TRANSITION_TO(task_gestCapture);
 	}
 	else{
+		//LOG("Disabling gesture!!\r\n"); 	
 		disableGesture(); 
   	
 		/*GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);*/
@@ -321,12 +325,13 @@ void task_gestCapture()
 		LOG("Running gesture \r\n");
 		uint8_t stale = *CHAN_IN2(uint8_t, stale, SELF_IN_CH(task_gestCapture),
 															CH(task_sample, task_gestCapture));
-		if(stale){
+		//TODO: get rid of stale variable... 	
+		/*if(stale){
 			LOG("Stale! \r\n"); 
-			/*Have to hope that these occur atomically... */ 
+			//Have to hope that these occur atomically...  
 			//disableGesture(); 
 			TRANSITION_TO(task_sample); 
-		}
+		}*/
 		stale = 1; 
 		/*Mark that we've started a gesture*/ 
 		CHAN_OUT1(uint8_t, stale, stale, SELF_OUT_CH(task_gestCapture)); 
@@ -339,10 +344,12 @@ void task_gestCapture()
 			points, o/w fail --> stale gesture data needs to be flushed. */
 			resetGestureFields(&gesture_data_); 
 			int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
+			//disableGesture(); 
 				//TODO chan_out the dir as we get it, let it be overwritten, nbd. Then grab it
 				//later if we run out of power. 
 			}
 		LOG("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n", num_samps, MIN_DATA_SETS); 	
+		//disableGesture(); 
 		if(num_samps > MIN_DATA_SETS){
 				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
 																											CH(task_gestCapture,task_gestCalc)); 

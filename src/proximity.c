@@ -556,6 +556,16 @@ void disableGesture(){
 	return; 
 }
 
+void reenableGesture(){
+	restartTransmit(); 
+	writeSingleByte(APDS9960_ENABLE); 
+	uint8_t val = readDataByte(); 
+	val |= (1 << GESTURE); 
+	restartTransmit(); 
+	writeDataByte(APDS9960_ENABLE, val); 
+	return; 
+}
+
 void check_mode(void){
 	uint8_t val ;
 	restartTransmit(); 

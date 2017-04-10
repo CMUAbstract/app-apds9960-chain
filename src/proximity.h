@@ -24,7 +24,7 @@
 #define APDS9960_I2C_ADDR       0x39
 
 /* Gesture parameters */
-#define GESTURE_THRESHOLD_OUT   20//10
+#define GESTURE_THRESHOLD_OUT   8 //20//10
 #define GESTURE_SENSITIVITY_1   50
 #define GESTURE_SENSITIVITY_2   20
 //#define GESTURE_SENSITIVITY_1 20
@@ -173,8 +173,8 @@
 #define DEFAULT_PERS            0x11    // 2 consecutive prox or ALS for int.
 #define DEFAULT_CONFIG2         0x01    // No saturation interrupts or LED boost  
 #define DEFAULT_CONFIG3         0       // Enable all photodiodes, no SAI
-#define DEFAULT_GPENTH          40      // Threshold for entering gesture mode
-#define DEFAULT_GEXTH           30      // Threshold for exiting gesture mode    
+#define DEFAULT_GPENTH          10 // 40      // Threshold for entering gesture mode
+#define DEFAULT_GEXTH           8 //30      // Threshold for exiting gesture mode    
 #define DEFAULT_GCONF1          0x40    // 4 gesture events for int., 1 for exit
 #define DEFAULT_GGAIN           GGAIN_8X
 #define DEFAULT_GLDRIVE        	LED_DRIVE_12_5MA				// Changed from: LED_DRIVE_25MA
@@ -233,7 +233,7 @@ int gesture_motion_;
 
 #define NUM_AVGS 2 
 #define NUM_SAMPS  8
-#define ALERT_THRESH 30
+#define ALERT_THRESH 10
 #define MIN_DATA_SETS 1
 #define MAX_DATA_SETS 32
 #define MAX_GESTS 128
