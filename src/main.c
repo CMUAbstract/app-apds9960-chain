@@ -32,6 +32,8 @@
 #define NUM_BLINKS_PER_TASK       1
 #define WAIT_TICKS                3
 
+//#define MEAS_PROX 
+
 #define CNTPWR 1
 #define LOG_PROX 1
 #define DEFAULT_CFG 							0b1111 
@@ -270,7 +272,7 @@ void task_init()
 		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc)); 
 		/*Set initial power config here, don't forget a delay!*/ 
 #ifdef MEAS_PROX
-		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3); 
+		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3);
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
 #endif
 
@@ -296,12 +298,12 @@ void task_sample()
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture)); 
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture)); 
 #ifdef MEAS_PROX
-		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_4); 
-		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_4); 
+		GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_3); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 #endif
 #ifdef MEAS_GEST
-		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3); 
-		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
+		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
+		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
 #endif
 		
 		reenableGesture();  
@@ -372,8 +374,8 @@ void task_gestCalc()
 		
 		gest_dir output = decodeGesture();
 #ifdef MEAS_GEST
-		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_4); 
-		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_4); 
+		GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
 #endif
 		LOG("------------------Dir = %u ---------------", output); 	
 		//encode_IO(output); 

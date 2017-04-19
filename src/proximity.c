@@ -901,7 +901,8 @@ gest_dir decodeGesture(void){
     }
     
     /* Determine swipe direction */
-  /*  if( (gesture_ud_count_ == -1) && (gesture_lr_count_ == 0) ) {
+#ifdef DUMMY
+  if( (gesture_ud_count_ == -1) && (gesture_lr_count_ == 0) ) {
         gesture_motion_ = DIR_UP;
     } else if( (gesture_ud_count_ == 1) && (gesture_lr_count_ == 0) ) {
         gesture_motion_ = DIR_DOWN;
@@ -935,7 +936,8 @@ gest_dir decodeGesture(void){
         }
     } else {
 						gesture_motion_ =  DIR_NONE;
-    }*/
+    }
+#else
 		/*New way to determine swipe direction... */ 
 		if( abs16(gesture_ud_delta_) > abs16(gesture_lr_delta_)){
 			gesture_motion_ = gesture_ud_delta_ > 0 ? DIR_DOWN : DIR_UP; 
@@ -946,6 +948,7 @@ gest_dir decodeGesture(void){
 		else{
 			gesture_motion_ = DIR_NONE; 
 		}
+#endif
   #if DEBUG
 //		LOG("--------------Dir = %u---------------\r\n", gesture_motion_); 
 //		delay(50000000); 

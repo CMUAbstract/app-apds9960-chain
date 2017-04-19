@@ -1,5 +1,7 @@
 override BOARD = capybara
+#override MEASURE = MEAS_PROX
 export BOARD
+#export MEASURE
 
 TOOLS = \
 

@@ -24,11 +24,15 @@
 #define APDS9960_I2C_ADDR       0x39
 
 /* Gesture parameters */
-#define GESTURE_THRESHOLD_OUT   8 //20//10
-#define GESTURE_SENSITIVITY_1   50
-#define GESTURE_SENSITIVITY_2   20
-//#define GESTURE_SENSITIVITY_1 20
-//#define GESTURE_SENSITIVITY_2 10
+#ifndef HIGH_POW
+  #define GESTURE_THRESHOLD_OUT   8 //20//10
+  #define GESTURE_SENSITIVITY_1   50
+  #define GESTURE_SENSITIVITY_2   20
+#else
+  #define GESTURE_THRESHOLD_OUT 20
+  #define GESTURE_SENSITIVITY_1 50
+  #define GESTURE_SENSITIVITY_2 20
+#endif
 
 /* Error code for returned values */
 #define ERROR                   0xFF
@@ -156,6 +160,7 @@
 #define GWTIME_39_2MS           7
 
 /* Default values */
+#ifndef HIGH_POW
 #define DEFAULT_ATIME           219     // 103ms
 #define DEFAULT_WTIME           246     // 27ms
 #define DEFAULT_PROX_PPULSE     0x00    //4us, 1 pulse //0x87    // 16us, 8 pulses
@@ -183,6 +188,35 @@
 #define DEFAULT_GPULSE          0x00 		//0xC9    // 32us, 10 pulses
 #define DEFAULT_GCONF3          0       // All photodiodes active during gesture
 #define DEFAULT_GIEN            0       // Disable gesture interrupts
+#else
+#define DEFAULT_ATIME           219     // 103ms
+#define DEFAULT_WTIME           246     // 27ms
+#define DEFAULT_PROX_PPULSE     0x87    // 16us, 8 pulses
+#define DEFAULT_GESTURE_PPULSE  0x89    // 16us, 10 pulses
+#define DEFAULT_POFFSET_UR      0       // 0 offset
+#define DEFAULT_POFFSET_DL      0       // 0 offset      
+#define DEFAULT_CONFIG1         0x60    // No 12x wait (WTIME) factor
+#define DEFAULT_LDRIVE          LED_DRIVE_25MA
+#define DEFAULT_PGAIN           PGAIN_4X
+#define DEFAULT_AGAIN           AGAIN_4X
+#define DEFAULT_PILT            0       // Low proximity threshold
+#define DEFAULT_PIHT            50      // High proximity threshold
+#define DEFAULT_AILT            0xFFFF  // Force interrupt for calibration
+#define DEFAULT_AIHT            0
+#define DEFAULT_PERS            0x11    // 2 consecutive prox or ALS for int.
+#define DEFAULT_CONFIG2         0x01    // No saturation interrupts or LED boost  
+#define DEFAULT_CONFIG3         0       // Enable all photodiodes, no SAI
+#define DEFAULT_GPENTH          40      // Threshold for entering gesture mode
+#define DEFAULT_GEXTH           30      // Threshold for exiting gesture mode    
+#define DEFAULT_GCONF1          0x40    // 4 gesture events for int., 1 for exit
+#define DEFAULT_GGAIN           GGAIN_8X
+#define DEFAULT_GLDRIVE        	LED_DRIVE_25MA				// Changed from: LED_DRIVE_25MA
+#define DEFAULT_GWTIME          GWTIME_2_8MS
+#define DEFAULT_GOFFSET         0       // No offset scaling for gesture mode
+#define DEFAULT_GPULSE          0xC9    // 32us, 10 pulses
+#define DEFAULT_GCONF3          0       // All photodiodes active during gesture
+#define DEFAULT_GIEN            0       // Disable gesture interrupts
+#endif
 
 /* Direction definitions */
 typedef enum gest_dir_ {
@@ -233,7 +267,13 @@ int gesture_motion_;
 
 #define NUM_AVGS 2 
 #define NUM_SAMPS  8
+
+#ifndef HIGH_POW
 #define ALERT_THRESH 10
+#else 
+#define ALERT_THRESH 30
+#endif
+
 #define MIN_DATA_SETS 1
 #define MAX_DATA_SETS 32
 #define MAX_GESTS 128
