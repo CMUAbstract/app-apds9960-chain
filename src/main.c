@@ -271,10 +271,7 @@ void task_init()
 		uint16_t gestInit = 0; 
 		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc)); 
 		/*Set initial power config here, don't forget a delay!*/ 
-#ifdef MEAS_PROX
-		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3);
-		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
-#endif
+LOG("SANITY CHECK \r\n"); 
 
 		TRANSITION_TO(task_sample);
 }
@@ -282,13 +279,27 @@ void task_init()
 void task_sample()
 {
   task_prologue();
-	LOG("In sample! \r\n"); 
+#ifdef MEAS_PROX
+		LOG("Going up!!\r\n"); 
+    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3);
+		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
+#endif
+//	LOG("In sample ! \r\n"); 
 	uint8_t proxVal = readProximity();
 #if LOG_PROX
-	LOG("proxVal = %u \r\n",proxVal); 
+//	LOG("proxVal = %u \r\n",proxVal); 
 #endif
-	delay(240000); 
-	uint8_t flag = 0; 
+
+
+delay(240000); 
+
+#ifdef MEAS_PROX
+	//	LOG("Coming down!!\r\n"); 
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
+		GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_3); 
+#endif
+
+uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
     //GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
 		flag = 1; 
@@ -297,14 +308,13 @@ void task_sample()
 			Switch to high power bank, let's assume that we precharged the banks in the past*/ 
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture)); 
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture)); 
-#ifdef MEAS_PROX
-		GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_3); 
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
-#endif
+/*
 #ifdef MEAS_GEST
+    LOG("Pulling Gesture high! \r\n"); 
 		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
 #endif
+*/
 		
 		reenableGesture();  
 		TRANSITION_TO(task_gestCapture);
@@ -327,13 +337,6 @@ void task_gestCapture()
 		LOG("Running gesture \r\n");
 		uint8_t stale = *CHAN_IN2(uint8_t, stale, SELF_IN_CH(task_gestCapture),
 															CH(task_sample, task_gestCapture));
-		//TODO: get rid of stale variable... 	
-		/*if(stale){
-			LOG("Stale! \r\n"); 
-			//Have to hope that these occur atomically...  
-			//disableGesture(); 
-			TRANSITION_TO(task_sample); 
-		}*/
 		stale = 1; 
 		/*Mark that we've started a gesture*/ 
 		CHAN_OUT1(uint8_t, stale, stale, SELF_OUT_CH(task_gestCapture)); 
@@ -345,14 +348,25 @@ void task_gestCapture()
 			/*break down get gesture into a loop, loop until we hit the minimum number of data
 			points, o/w fail --> stale gesture data needs to be flushed. */
 			resetGestureFields(&gesture_data_); 
+#ifdef MEAS_GEST
+    LOG("Pulling Gesture high! \r\n"); 
+		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
+		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+#endif
 			int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
 			//disableGesture(); 
 				//TODO chan_out the dir as we get it, let it be overwritten, nbd. Then grab it
 				//later if we run out of power. 
 			}
-		LOG("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n", num_samps, MIN_DATA_SETS); 	
 		//disableGesture(); 
-		if(num_samps > MIN_DATA_SETS){
+#ifdef MEAS_GEST
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+		LOG("Pulling gesture low!! \r\n"); 
+    GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
+#endif
+		LOG("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n", num_samps, MIN_DATA_SETS); 	
+		
+    if(num_samps > MIN_DATA_SETS){
 				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
 																											CH(task_gestCapture,task_gestCalc)); 
 			  LOG("transitioning to final calc!\r\n"); 
@@ -376,8 +390,10 @@ void task_gestCalc()
 #ifdef MEAS_GEST
 		GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
 		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+    LOG("Pulled gesture low again! \r\n"); 
 #endif
-		LOG("------------------Dir = %u ---------------", output); 	
+
+    LOG("------------------Dir = %u ---------------", output); 	
 		//encode_IO(output); 
 		delay(5000000);
 		delay(5000000);

@@ -240,7 +240,11 @@ void enableProximitySensor(void){
 	restartTransmit(); 
 	writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte(); 
-	val |= (1 << POWER);
+  val |= (1 << POWER);
+#ifdef NO_PERIPHS
+  /*Disable the power if we're turning off the peripherals*/ 
+  val &= ~(1 << POWER); 
+#endif
 	restartTransmit(); 
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Set proximity mode*/
@@ -494,7 +498,10 @@ void enableGesture(void){
 	enable = enable << 1; 
 	val &= 0xFD;
 	val |= enable; 
-	/*set gesture mode*/ 
+#ifdef NO_PERIPHS
+  val &= ~enable; 
+#endif
+  /*set gesture mode*/ 
 	mode = 1; 
 	mode  &= 0x1; 
 	val &= 0xFE; 
@@ -507,7 +514,10 @@ void enableGesture(void){
 	val = readDataByte();
 	//LOG("ENABLE = %x \r\n", val); 
 	val |= (1 << POWER);
-	restartTransmit(); 
+#ifdef NO_PERIPHS
+  val &= ~(1 << POWER); 
+#endif
+  restartTransmit(); 
 	//LOG("Writing %x to ENABLE \r\n", val); 
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Enable wait mode*/
