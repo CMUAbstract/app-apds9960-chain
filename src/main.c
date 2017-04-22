@@ -243,11 +243,16 @@ void initializeHardware()
     edb_set_app_output_cb(write_app_output);
 #endif
 
-
     WATCHPOINT(WATCHPOINT_BOOT);
     
     GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
     GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+
+#ifdef USE_PHOTORES
+  P3SEL0 |= BIT0; 
+  P3SEL1 |= BIT1; 
+  PM5CTL0 &= ~LOCKLPM5; 
+#endif
 
     i2c_setup();
 		LOG("i2c setup done \r\n"); 
@@ -295,9 +300,9 @@ void task_sample()
 #endif
 
 #ifdef USE_PHOTORES
-  enable_photoresistor(); 
+  //enable_photoresistor(); 
   int16_t test = read_photoresistor(); 
-  LOG("PHOTORESISTOR OUTPUT = %d \r\n", test); 
+  LOG("PHOTORESISTOR OUTPUT = %i \r\n", test); 
 #endif
 
 delay(240000); 
