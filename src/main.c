@@ -33,6 +33,7 @@
 #define WAIT_TICKS                3
 
 //#define MEAS_PROX 
+#define USE_PHOTORES
 
 #define CNTPWR 1
 #define LOG_PROX 1
@@ -244,6 +245,9 @@ void initializeHardware()
 
 
     WATCHPOINT(WATCHPOINT_BOOT);
+    
+    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
 
     i2c_setup();
 		LOG("i2c setup done \r\n"); 
@@ -290,6 +294,11 @@ void task_sample()
 //	LOG("proxVal = %u \r\n",proxVal); 
 #endif
 
+#ifdef USE_PHOTORES
+  enable_photoresistor(); 
+  int16_t test = read_photoresistor(); 
+  LOG("PHOTORESISTOR OUTPUT = %d \r\n", test); 
+#endif
 
 delay(240000); 
 
@@ -308,13 +317,14 @@ uint8_t flag = 0;
 			Switch to high power bank, let's assume that we precharged the banks in the past*/ 
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture)); 
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture)); 
-/*
+
 #ifdef MEAS_GEST
+//Loose start!
     LOG("Pulling Gesture high! \r\n"); 
 		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
 #endif
-*/
+
 		
 		reenableGesture();  
 		TRANSITION_TO(task_gestCapture);
@@ -322,6 +332,7 @@ uint8_t flag = 0;
 	else{
 		//LOG("Disabling gesture!!\r\n"); 	
 		disableGesture(); 
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
   	
 		/*GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);*/
 		TRANSITION_TO(task_sample);
@@ -349,9 +360,14 @@ void task_gestCapture()
 			points, o/w fail --> stale gesture data needs to be flushed. */
 			resetGestureFields(&gesture_data_); 
 #ifdef MEAS_GEST
+/*    //GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+		LOG("Pulling gesture low!! \r\n"); 
+//Med start (rising edge)
     LOG("Pulling Gesture high! \r\n"); 
 		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+*/
 #endif
 			int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
 			//disableGesture(); 
@@ -359,14 +375,19 @@ void task_gestCapture()
 				//later if we run out of power. 
 			}
 		//disableGesture(); 
-#ifdef MEAS_GEST
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-		LOG("Pulling gesture low!! \r\n"); 
-    GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
-#endif
 		LOG("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n", num_samps, MIN_DATA_SETS); 	
 		
     if(num_samps > MIN_DATA_SETS){
+#ifdef MEAS_GEST
+/*    LOG("Pulling Gesture high! \r\n"); 
+		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
+		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+//Med end (falling edge)
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+		LOG("Pulling gesture low!! \r\n"); 
+    GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
+*/
+#endif
 				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
 																											CH(task_gestCapture,task_gestCalc)); 
 			  LOG("transitioning to final calc!\r\n"); 
@@ -388,12 +409,12 @@ void task_gestCalc()
 		
 		gest_dir output = decodeGesture();
 #ifdef MEAS_GEST
-		GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-    LOG("Pulled gesture low again! \r\n"); 
+    //loose end
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+		LOG("Pulling gesture low!! \r\n"); 
+    GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
 #endif
-
-    LOG("------------------Dir = %u ---------------", output); 	
+  LOG("------------------Dir = %u ---------------", output); 	
 		//encode_IO(output); 
 		delay(5000000);
 		delay(5000000);

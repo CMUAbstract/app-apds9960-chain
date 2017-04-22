@@ -205,6 +205,60 @@ void proximity_init(void) {
 	return; 
 }
 
+
+/*
+ *@brief Sets up pin 3.0 to read from a photoresistor
+ *@details Written based on egauge code found at github.com/CMUAbstract/egauge
+ */
+void enable_photoresistor(void){
+  //Set pin 3.0 to ADC comparator mode
+  P3SEL0 |= BIT0;
+  P3SEL1 |= BIT1;
+  //Use ref control bits in REF, disable temp sensor
+  REFCTL0 |= REFTCOFF;
+  REFCTL0 |= REFVSEL_0 | REFON; 
+  while(!(REFCTL0 & REFGENRDY)); 
+  
+  //Not totally sure this belongs here... might need to reverse this line and the next one
+  ADC12CTL0 |= ADC12ON; 
+
+  //Zero out the ENC bit so we can make set system parameters... 
+  ADC12CTL0 &= ~(ADC12ENC); 
+  
+  ADC12CTL1 |= ADC12SHP | ADC12SHS_2 | ADC12SSEL_1; 
+  ADC12CTL0 |= ADC12SHT0_15 | ADC12SHT1_15; 
+  ADC12MCTL0 |= ADC12INCH_12 | ADC12VRSEL_1 | ADC12EOS; //Turn on A12 and set VR select to 1
+
+  //Reset 
+  ADC12CTL1 &= ~(ADC12CONSEQ_3); 
+  ADC12IFGR0 = 0; 
+  
+  ADC12CTL0 |= ADC12ENC; 
+
+  TB0CTL |= TBSSEL__ACLK | ID__8; //Hopefully this clock division works.... 
+  TB0CCR0 = 4; //Cycles at 4kHz -> 1024 samples/sec 
+  TB0CCTL0 = OUTMOD_3; //No idea what this means... 
+}
+
+/*
+ *@brief starts reading from the photoresistor ADC comparator pins
+ *
+ */
+int16_t read_photoresistor(void){
+  TB0CTL |= TBCLR; 
+  TB0CTL |= MC_1; 
+  ADC12CTL0 |= ADC12ENC; 
+  while(!ADC12IFGR0 & ADC12IFG0); //wait for sample
+  
+  int16_t output = ADC12MEM0; 
+  ADC12CTL0 &= ~ADC12ENC; 
+  output -= 2048; //subtract midpoint offset
+  TB0CTL &= ~MC_0; //Hmm, might not be strictly necessary--> maybe just an egauge leftover
+  return output; 
+}
+
+
+
 void enableProximitySensor(void){
 	/*Set proximity gain*/
 	restartTransmit(); 
