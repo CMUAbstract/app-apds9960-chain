@@ -17,8 +17,14 @@ typedef uint16_t capybara_bankmask_t;
 // Bits reporting status of a precharge operation
 typedef uint8_t prechg_status_t; 
 
+// Tuple of params that define the pwr system configuration
+typedef struct {
+    capybara_bankmask_t banks;
+    uint16_t vth;
+} capybara_cfg_t;
+
 // Configure the power system runtime params
-int capybara_config(capybara_bankmask_t banks, uint16_t wiper);
+int capybara_config(capybara_cfg_t cfg);
 
 // Enable the capacitor banks specified in the bitmask
 int capybara_config_banks(capybara_bankmask_t banks);

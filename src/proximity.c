@@ -220,58 +220,19 @@ void enable_photoresistor(void){
   ADC12CTL2 |= ADC12RES_2;                  // 12-bit conversion results
   ADC12MCTL0 |= ADC12INCH_1;                // A1 ADC input select; Vref=AVCC
   
-  //Not totally sure this belongs here... might need to reverse this line and the next one
-  //ADC12CTL0 |= ADC12ON; 
-
-  //Zero out the ENC bit so we can make set system parameters... 
-  /*ADC12CTL0 &= ~(ADC12ENC); 
-  
-  //Use ref control bits in REF, disable temp sensor
-  REFCTL0 |= REFTCOFF;
-  REFCTL0 |= REFVSEL_0 | REFON; 
-  while(!(REFCTL0 & REFGENRDY)); 
-  __delay_cycles(1000); 
-
-  ADC12CTL1 |= ADC12SHP | ADC12SHS_2 | ADC12SSEL_1; 
-  ADC12CTL0 |= ADC12SHT0_15 | ADC12SHT1_15; 
-  ADC12MCTL0 |= ADC12INCH_12 | ADC12VRSEL_1 | ADC12EOS; //Turn on A12 and set VR select to 1
-
-  //Reset 
-  ADC12CTL1 &= ~(ADC12CONSEQ_3); 
-  ADC12IFGR0 = 0; 
-  
-  ADC12CTL0 |= ADC12ENC; 
-
-  TB0CTL |= TBSSEL__ACLK | ID__8; //Hopefully this clock division works.... 
-  TB0CCR0 = 4; //Cycles at 4kHz -> 1024 samples/sec 
-  TB0CCTL0 = OUTMOD_3; //No idea what this means... */
-
-
 }
 
 /*
  *@brief starts reading from the photoresistor ADC comparator pins
  *
  */
-/*
-int16_t read_photoresistor(void){
-  ADC12CTL0 |= ADC12ENC | ADC12SC; 
-  LOG("Hung waiting for sample!! \r\n");  
-  while(!ADC12IFGR0 & ADC12IFG0); //wait for sample
-  
-  int16_t output = ADC12MEM0; 
-  ADC12CTL0 &= ~ADC12ENC; 
-  //output -= 2048; //subtract midpoint offset
-  TB0CTL &= ~MC_0; //Hmm, might not be strictly necessary--> maybe just an egauge leftover
-  return output; 
-}
-*/
 int16_t read_photoresistor(void){
    ADC12CTL0 &= ~ADC12ENC;           // Disable conversions
 
   ADC12CTL1 = ADC12SHP;
   //ADC12CTL2 = ADC12RES_2;
-  ADC12MCTL0 = ADC12VRSEL_1 | ADC12INCH_12; 
+  ADC12MCTL0 = ADC12VRSEL_1 | ADC12INCH_13; 
+  //ADC12MCTL0 = ADC12VRSEL_1 | ADC12INCH_12; 
   ADC12CTL0 |= ADC12SHT03 | ADC12ON;
 
   while( REFCTL0 & REFGENBUSY );
@@ -289,9 +250,10 @@ int16_t read_photoresistor(void){
   ADC12CTL0 &= ~ADC12ENC;           // Disable conversions
   ADC12CTL0 &= ~(ADC12ON);  // Shutdown ADC12
   REFCTL0 &= ~REFON;
-  
+  LOG("photoresistor out = %u \r\n", output);  
+  //output = 0xFFF - output; 
+  //output &= 0xFFF;
   return output; 
-
 }
 
 void enableProximitySensor(void){
@@ -338,12 +300,14 @@ void enableProximitySensor(void){
 	writeDataByte(APDS9960_ENABLE,val); 
 	/*Set proximity mode*/
 	restartTransmit(); 
-	writeSingleByte(APDS9960_ENABLE); 
+//Only enable proximity detection if we're NOT using the photoresistor
+#ifndef USE_PHOTORES
+  writeSingleByte(APDS9960_ENABLE); 
 	val = readDataByte(); 
 	val |= (1 << PROXIMITY);
 	restartTransmit(); 
 	writeDataByte(APDS9960_ENABLE,val); 
-
+#endif
 	return; 
 }
 

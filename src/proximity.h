@@ -268,10 +268,16 @@ int gesture_motion_;
 #define NUM_AVGS 2 
 #define NUM_SAMPS  8
 
-#ifndef HIGH_POW
-#define ALERT_THRESH 10
-#else 
-#define ALERT_THRESH 30
+//Set ALERT_THRESH based on the hardware we're using for detection... 
+#ifndef USE_PHOTORES
+  #ifndef HIGH_POW
+    #define ALERT_THRESH 10
+  #else 
+    #define ALERT_THRESH 30
+  #endif
+#else
+  #define ALERT_THRESH 2000
+  //#define ALERT_THRESH 100
 #endif
 
 #define MIN_DATA_SETS 1

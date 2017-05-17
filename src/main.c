@@ -1,3 +1,4 @@
+//usual libs
 #include <msp430.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -5,14 +6,26 @@
 #include <string.h>
 #include <math.h> 
 #include <stdarg.h> 
-#include <libwispbase/wisp-base.h>
+//Before periph to get away with gpio macro 
+#include "libmspware/driverlib.h"
+
+//specific libmsp pieces
+#include <libmsp/watchdog.h> 
+#include <libmsp/clock.h> 
+#include <libmsp/gpio.h>
+#include <libmsp/periph.h>
+#include <libmsp/sleep.h>
+#include <libio/printf.h>
 #include <libmsp/mem.h>
+//Other stuff
 #include <libchain/chain.h>
 #include <libio/log.h>
-#include "libmspware/driverlib.h"
 #include <libcapybara/reconfig.h> 
+#include <libcapybara/capybara.h> 
 #include "proximity.h"
 #include "pins.h"
+//Left here for now... 
+#include <libwispbase/wisp-base.h>
 
 #ifdef CONFIG_LIBEDB_PRINTF
 #include <libedb/edb.h>
@@ -33,7 +46,7 @@
 #define WAIT_TICKS                3
 
 //#define MEAS_PROX 
-#define USE_PHOTORES
+//#define USE_PHOTORES
 
 #define CNTPWR 1
 #define LOG_PROX 1
@@ -107,28 +120,50 @@ void initializeHardware(void);
 
 void init()
 {
-    WISP_init();
-/*		
-   GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
-    GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
-*/   
-	//Configure capybara banks to desired setting 
-//	capybara_config_banks(curbankcfg); 
+  //WISP_init();
+  
+  //Handle usual init stuff 
+  msp_watchdog_disable(); 
+  msp_gpio_unlock(); 
+  __enable_interrupt(); 
+  //Wait until we hit stable power level
+  capybara_wait_for_supply();
 
-	INIT_CONSOLE();
+  capybara_config_pins();
 
-    __enable_interrupt();
-/*
-#if defined(PORT_LED_3) // when available, this LED indicates power-on
-    GPIO(PORT_LED_3, OUT) |= BIT(PIN_LED_3);
-#endif
-*/
-			LOG("Starting init\r\n"); 
-		initializeHardware();
+  GPIO(PORT_CAPYBARA_CFG, OUT) &= ~BIT(PIN_CAPYBARA_CFG);
+  GPIO(PORT_CAPYBARA_CFG, DIR) &= BIT(PIN_CAPYBARA_CFG);
+
+  GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
+  GPIO(PORT_SENSE_SW, DIR) |= BIT(PIN_SENSE_SW);
+
+  capybara_config_banks(0xf);
+  capybara_wait_for_supply();
+
+
+    // Turn on sensor power supply
+    GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
+
+    // In ~1ms (but not right now), our supply voltage might drop, due to
+    // charging of sensor caps that may overwhelm the booster briefly. We
+    // need to wait for the drop until we can wait for supply to stabilize
+    // using the VBOOST_OK supervisor, which we do below. This code works
+    // fine if there is no drop in the supply voltage at all.
+    msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
+    capybara_wait_for_supply();
+
+    while(1) {
+        __bis_SR_register(LPM4_bits);
+    }
+
+    msp_clock_setup(); 
+    INIT_CONSOLE(); 
+		LOG("Starting init\r\n"); 
+		
+    //Now send init commands to the apds
+    initializeHardware();
 		delay(4000); 
-	//	while(1){
-			LOG("gesture app booted\r\n");
-	//		}
+		LOG("gesture app booted\r\n");
 }
 
 /**
@@ -208,63 +243,28 @@ void delay(uint32_t cycles)
 }
 
 void initializeHardware()
-{		WISP_init(); 
-		INIT_CONSOLE(); 
-		__enable_interrupt(); 
-		LOG("Starting HW setup \r\n"); 
-
-    WDTCTL = WDTPW | WDTHOLD;  // Stop watchdog timer
-
-#if defined(BOARD_EDB) || defined(BOARD_WISP) || defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
-    PM5CTL0 &= ~LOCKLPM5;	   // Enable GPIO pin settings
-#endif
-
-#if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
-    /*P1DIR |= BIT0 | BIT1 | BIT2;
-    P1OUT &= ~(BIT0 | BIT1 | BIT2);
-    P2DIR |= BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7;
-    P2OUT &= ~(BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT7);
-    P3DIR |= BIT6 | BIT7;
-    P3OUT &= ~(BIT6 | BIT7);
-    P4DIR |= BIT0 | BIT1 | BIT4;
-    P4OUT &= ~(BIT0 | BIT1 | BIT4);
-    PJDIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
-    PJOUT |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;*/
-#endif
-
-#if defined(BOARD_SPRITE_APP_SOCKET_RHA) || defined(BOARD_SPRITE_APP)
-    CSCTL0_H = 0xA5;
-    CSCTL1 = DCOFSEL_6; //8MHz
-    CSCTL3 = DIVA_0 + DIVS_0 + DIVM_0;
-#endif
-
-#ifdef CONFIG_EDB
-    debug_setup();
-    edb_set_app_output_cb(write_app_output);
-#endif
-
-    WATCHPOINT(WATCHPOINT_BOOT);
+{		LOG("Starting HW setup \r\n"); 
     
-    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
     GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
 
-#ifdef USE_PHOTORES
-  P3SEL0 |= BIT0; 
-  P3SEL1 |= BIT1; 
-  PM5CTL0 &= ~LOCKLPM5; 
-#endif
+    #ifdef USE_PHOTORES
+        P3SEL0 |= BIT1; 
+        P3SEL1 |= BIT1; 
+        PM5CTL0 &= ~LOCKLPM5; 
+    #endif
 
     i2c_setup();
 		LOG("i2c setup done \r\n"); 
 		/*Iinitialize apds*/
 		proximity_init(); 
 		/*Now enable the proximity sensor*/
-		enableProximitySensor(); 
+    #ifndef  USE_PHOTORES
+    enableProximitySensor(); 
+    #endif
    	enableGesture();  
 		disableGesture(); 
-		//while(1){
 		LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
-	//	}
 }
 
 void task_init()
@@ -280,7 +280,7 @@ void task_init()
 		uint16_t gestInit = 0; 
 		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc)); 
 		/*Set initial power config here, don't forget a delay!*/ 
-LOG("SANITY CHECK \r\n"); 
+    LOG("SANITY CHECK \r\n"); 
 
 		TRANSITION_TO(task_sample);
 }
@@ -293,19 +293,20 @@ void task_sample()
     GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3);
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
 #endif
-//	LOG("In sample ! \r\n"); 
-	uint8_t proxVal = readProximity();
-#if LOG_PROX
-//	LOG("proxVal = %u \r\n",proxVal); 
-#endif
 
+//TODO double check that it's not a problem to use the apds output as an int16_t... 
+int16_t proxVal = 0; 
 #ifdef USE_PHOTORES
   //enable_photoresistor(); 
-  int16_t test = read_photoresistor(); 
-  LOG("PHOTORESISTOR OUTPUT = %i \r\n", test); 
+    proxVal = read_photoresistor(); 
+#else
+	proxVal = readProximity();
+  delay(240000); 
 #endif
 
-delay(240000); 
+#if LOG_PROX
+	LOG("proxVal = %u \r\n",proxVal); 
+#endif
 
 #ifdef MEAS_PROX
 	//	LOG("Coming down!!\r\n"); 
@@ -324,10 +325,12 @@ uint8_t flag = 0;
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture)); 
 
 #ifdef MEAS_GEST
+/*
 //Loose start!
     LOG("Pulling Gesture high! \r\n"); 
 		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
+*/
 #endif
 
 		
@@ -337,7 +340,7 @@ uint8_t flag = 0;
 	else{
 		//LOG("Disabling gesture!!\r\n"); 	
 		disableGesture(); 
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
   	
 		/*GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);*/
 		TRANSITION_TO(task_sample);
@@ -365,14 +368,12 @@ void task_gestCapture()
 			points, o/w fail --> stale gesture data needs to be flushed. */
 			resetGestureFields(&gesture_data_); 
 #ifdef MEAS_GEST
-/*    //GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-		LOG("Pulling gesture low!! \r\n"); 
+
 //Med start (rising edge)
     LOG("Pulling Gesture high! \r\n"); 
 		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
-*/
+
 #endif
 			int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
 			//disableGesture(); 
@@ -384,14 +385,12 @@ void task_gestCapture()
 		
     if(num_samps > MIN_DATA_SETS){
 #ifdef MEAS_GEST
-/*    LOG("Pulling Gesture high! \r\n"); 
-		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
-		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
-//Med end (falling edge)
+ 
+    //Med end (falling edge)
     GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
 		LOG("Pulling gesture low!! \r\n"); 
     GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
-*/
+
 #endif
 				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
 																											CH(task_gestCapture,task_gestCalc)); 
@@ -414,10 +413,11 @@ void task_gestCalc()
 		
 		gest_dir output = decodeGesture();
 #ifdef MEAS_GEST
-    //loose end
+/*    //loose end
     GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
 		LOG("Pulling gesture low!! \r\n"); 
     GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
+*/
 #endif
   LOG("------------------Dir = %u ---------------", output); 	
 		//encode_IO(output); 

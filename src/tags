@@ -1,0 +1,720 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+AGAIN_16X	proximity.h	133;"	d
+AGAIN_1X	proximity.h	131;"	d
+AGAIN_4X	proximity.h	132;"	d
+AGAIN_64X	proximity.h	134;"	d
+ALERT_THRESH	main_vers/prox_trigger.c	37;"	d	file:
+ALERT_THRESH	proximity.h	236;"	d
+ALL	proximity.h	116;"	d
+ALL_STATE	proximity.h	/^  ALL_STATE$/;"	e	enum:gest_dist_
+AMBIENT_LIGHT	proximity.h	110;"	d
+AMBIENT_LIGHT_INT	proximity.h	113;"	d
+APDS9960_AEN	proximity.h	96;"	d
+APDS9960_AICLEAR	proximity.h	88;"	d
+APDS9960_AIHTH	proximity.h	50;"	d
+APDS9960_AIHTL	proximity.h	49;"	d
+APDS9960_AILTH	proximity.h	48;"	d
+APDS9960_AILTL	proximity.h	47;"	d
+APDS9960_ATIME	proximity.h	45;"	d
+APDS9960_BDATAH	proximity.h	67;"	d
+APDS9960_BDATAL	proximity.h	66;"	d
+APDS9960_CDATAH	proximity.h	61;"	d
+APDS9960_CDATAL	proximity.h	60;"	d
+APDS9960_CICLEAR	proximity.h	87;"	d
+APDS9960_CONFIG1	proximity.h	54;"	d
+APDS9960_CONFIG2	proximity.h	57;"	d
+APDS9960_CONFIG3	proximity.h	71;"	d
+APDS9960_CONTROL	proximity.h	56;"	d
+APDS9960_ENABLE	proximity.h	44;"	d
+APDS9960_GCONF1	proximity.h	74;"	d
+APDS9960_GCONF2	proximity.h	75;"	d
+APDS9960_GCONF3	proximity.h	81;"	d
+APDS9960_GCONF4	proximity.h	82;"	d
+APDS9960_GDATAH	proximity.h	65;"	d
+APDS9960_GDATAL	proximity.h	64;"	d
+APDS9960_GEN	proximity.h	101;"	d
+APDS9960_GEXTH	proximity.h	73;"	d
+APDS9960_GFIFO_D	proximity.h	90;"	d
+APDS9960_GFIFO_L	proximity.h	91;"	d
+APDS9960_GFIFO_R	proximity.h	92;"	d
+APDS9960_GFIFO_U	proximity.h	89;"	d
+APDS9960_GFLVL	proximity.h	83;"	d
+APDS9960_GOFFSET_D	proximity.h	77;"	d
+APDS9960_GOFFSET_L	proximity.h	78;"	d
+APDS9960_GOFFSET_R	proximity.h	79;"	d
+APDS9960_GOFFSET_U	proximity.h	76;"	d
+APDS9960_GPENTH	proximity.h	72;"	d
+APDS9960_GPULSE	proximity.h	80;"	d
+APDS9960_GSTATUS	proximity.h	84;"	d
+APDS9960_GVALID	proximity.h	102;"	d
+APDS9960_I2C_ADDR	proximity.h	24;"	d
+APDS9960_ID	proximity.h	58;"	d
+APDS9960_ID_1	proximity.h	37;"	d
+APDS9960_ID_2	proximity.h	38;"	d
+APDS9960_IFORCE	proximity.h	85;"	d
+APDS9960_PDATA	proximity.h	68;"	d
+APDS9960_PEN	proximity.h	97;"	d
+APDS9960_PERS	proximity.h	53;"	d
+APDS9960_PICLEAR	proximity.h	86;"	d
+APDS9960_PIEN	proximity.h	100;"	d
+APDS9960_PIHT	proximity.h	52;"	d
+APDS9960_PILT	proximity.h	51;"	d
+APDS9960_POFFSET_DL	proximity.h	70;"	d
+APDS9960_POFFSET_UR	proximity.h	69;"	d
+APDS9960_PON	proximity.h	95;"	d
+APDS9960_PPULSE	proximity.h	55;"	d
+APDS9960_RDATAH	proximity.h	63;"	d
+APDS9960_RDATAL	proximity.h	62;"	d
+APDS9960_STATUS	proximity.h	59;"	d
+APDS9960_WEN	proximity.h	98;"	d
+APDS9960_WTIME	proximity.h	46;"	d
+APSD9960_AIEN	proximity.h	99;"	d
+BIT	hide/pin_assign.h	9;"	d
+BIT	pin_assign.h	9;"	d
+BIT	pins.h	9;"	d
+BIT_INNER	hide/pin_assign.h	8;"	d
+BIT_INNER	pin_assign.h	8;"	d
+BIT_INNER	pins.h	8;"	d
+BLINK_DURATION_ITERS	gesture_main.c	30;"	d	file:
+BLINK_DURATION_ITERS	hide/chain_main.c	30;"	d	file:
+BLINK_DURATION_ITERS	main.c	30;"	d	file:
+BLINK_DURATION_ITERS	main_vers/anomaly.c	36;"	d	file:
+BLINK_DURATION_ITERS	main_vers/gesture_main.c	30;"	d	file:
+BLINK_DURATION_ITERS	main_vers/prox_main.c	30;"	d	file:
+BLINK_DURATION_ITERS	main_vers/prox_trigger.c	30;"	d	file:
+BLINK_DURATION_ITERS	prox_main.c	30;"	d	file:
+BOARD_SPRITE_APP	hide/old_main.c	33;"	d	file:
+CAL_ADC_12T30	hide/temp_sensor.c	/^unsigned int CAL_ADC_12T30;$/;"	v
+CAL_ADC_12T85	hide/temp_sensor.c	/^unsigned int CAL_ADC_12T85;$/;"	v
+CAL_TEMP_SCALE_100X	hide/temp_sensor.c	/^float CAL_TEMP_SCALE_100X;$/;"	v
+CNTPWR	main.c	35;"	d	file:
+CNTPWR	main_vers/prox_trigger.c	41;"	d	file:
+DEBUG	proximity.h	20;"	d
+DEFAULT_AGAIN	proximity.h	168;"	d
+DEFAULT_AIHT	proximity.h	172;"	d
+DEFAULT_AILT	proximity.h	171;"	d
+DEFAULT_ATIME	proximity.h	159;"	d
+DEFAULT_CFG	main.c	37;"	d	file:
+DEFAULT_CONFIG1	proximity.h	165;"	d
+DEFAULT_CONFIG2	proximity.h	174;"	d
+DEFAULT_CONFIG3	proximity.h	175;"	d
+DEFAULT_GCONF1	proximity.h	178;"	d
+DEFAULT_GCONF3	proximity.h	184;"	d
+DEFAULT_GESTURE_PPULSE	proximity.h	162;"	d
+DEFAULT_GEXTH	proximity.h	177;"	d
+DEFAULT_GGAIN	proximity.h	179;"	d
+DEFAULT_GIEN	proximity.h	185;"	d
+DEFAULT_GLDRIVE	proximity.h	180;"	d
+DEFAULT_GOFFSET	proximity.h	182;"	d
+DEFAULT_GPENTH	proximity.h	176;"	d
+DEFAULT_GPULSE	proximity.h	183;"	d
+DEFAULT_GWTIME	proximity.h	181;"	d
+DEFAULT_LDRIVE	proximity.h	166;"	d
+DEFAULT_PERS	proximity.h	173;"	d
+DEFAULT_PGAIN	proximity.h	167;"	d
+DEFAULT_PIHT	proximity.h	170;"	d
+DEFAULT_PILT	proximity.h	169;"	d
+DEFAULT_POFFSET_DL	proximity.h	164;"	d
+DEFAULT_POFFSET_UR	proximity.h	163;"	d
+DEFAULT_PROX_PPULSE	proximity.h	161;"	d
+DEFAULT_WTIME	proximity.h	160;"	d
+DIR_ALL	proximity.h	/^  DIR_ALL$/;"	e	enum:gest_dir_
+DIR_DOWN	proximity.h	/^  DIR_DOWN,$/;"	e	enum:gest_dir_
+DIR_FAR	proximity.h	/^  DIR_FAR,$/;"	e	enum:gest_dir_
+DIR_LEFT	proximity.h	/^  DIR_LEFT,$/;"	e	enum:gest_dir_
+DIR_NEAR	proximity.h	/^  DIR_NEAR,$/;"	e	enum:gest_dir_
+DIR_NONE	proximity.h	/^  DIR_NONE = 0,$/;"	e	enum:gest_dir_
+DIR_RIGHT	proximity.h	/^  DIR_RIGHT,$/;"	e	enum:gest_dir_
+DIR_UP	proximity.h	/^  DIR_UP,$/;"	e	enum:gest_dir_
+ERROR	proximity.h	34;"	d
+FAR_STATE	proximity.h	/^  FAR_STATE,$/;"	e	enum:gest_dist_
+FIELD_INIT_msg_self_gest_data	main.c	68;"	d	file:
+FIELD_INIT_msg_self_gest_data	main_vers/prox_trigger.c	67;"	d	file:
+FIELD_INIT_msg_self_index	gesture_main.c	44;"	d	file:
+FIELD_INIT_msg_self_index	hide/chain_main.c	44;"	d	file:
+FIELD_INIT_msg_self_index	hide/old_main.c	89;"	d	file:
+FIELD_INIT_msg_self_index	main_vers/anomaly.c	50;"	d	file:
+FIELD_INIT_msg_self_index	main_vers/gesture_main.c	44;"	d	file:
+FIELD_INIT_msg_self_index	main_vers/prox_main.c	44;"	d	file:
+FIELD_INIT_msg_self_index	prox_main.c	44;"	d	file:
+FIELD_INIT_msg_self_samples	gesture_main.c	61;"	d	file:
+FIELD_INIT_msg_self_samples	hide/chain_main.c	61;"	d	file:
+FIELD_INIT_msg_self_samples	main_vers/anomaly.c	67;"	d	file:
+FIELD_INIT_msg_self_samples	main_vers/gesture_main.c	61;"	d	file:
+FIELD_INIT_msg_self_samples	main_vers/prox_main.c	61;"	d	file:
+FIELD_INIT_msg_self_samples	prox_main.c	61;"	d	file:
+FIELD_INIT_msg_self_stale_flag	main.c	56;"	d	file:
+FIELD_INIT_msg_self_stale_flag	main_vers/prox_trigger.c	55;"	d	file:
+FIELD_INIT_msg_self_warningParams	gesture_main.c	76;"	d	file:
+FIELD_INIT_msg_self_warningParams	hide/chain_main.c	76;"	d	file:
+FIELD_INIT_msg_self_warningParams	main_vers/anomaly.c	82;"	d	file:
+FIELD_INIT_msg_self_warningParams	main_vers/gesture_main.c	76;"	d	file:
+FIELD_INIT_msg_self_warningParams	main_vers/prox_main.c	76;"	d	file:
+FIELD_INIT_msg_self_warningParams	prox_main.c	76;"	d	file:
+FIFO_PAUSE	proximity.h	244;"	d
+FIFO_PAUSE_TIME	proximity.h	41;"	d
+GESTURE	proximity.h	115;"	d
+GESTURE_HOLD_TIME	proximity.h	245;"	d
+GESTURE_SENSITIVITY_1	proximity.h	28;"	d
+GESTURE_SENSITIVITY_2	proximity.h	29;"	d
+GESTURE_THRESHOLD_OUT	proximity.h	27;"	d
+GGAIN_1X	proximity.h	137;"	d
+GGAIN_2X	proximity.h	138;"	d
+GGAIN_4X	proximity.h	139;"	d
+GGAIN_8X	proximity.h	140;"	d
+GPIO	hide/pin_assign.h	12;"	d
+GPIO	pin_assign.h	12;"	d
+GPIO	pins.h	12;"	d
+GPIO_INNER	hide/pin_assign.h	11;"	d
+GPIO_INNER	pin_assign.h	11;"	d
+GPIO_INNER	pins.h	11;"	d
+GWTIME_0MS	proximity.h	149;"	d
+GWTIME_14_0MS	proximity.h	153;"	d
+GWTIME_22_4MS	proximity.h	154;"	d
+GWTIME_2_8MS	proximity.h	150;"	d
+GWTIME_30_8MS	proximity.h	155;"	d
+GWTIME_39_2MS	proximity.h	156;"	d
+GWTIME_5_6MS	proximity.h	151;"	d
+GWTIME_8_4MS	proximity.h	152;"	d
+GX	hide/old_main.c	50;"	d	file:
+GY	hide/old_main.c	51;"	d	file:
+GYRO_DLPF_FS_ADDRESS	hide/gyro.h	10;"	d
+GYRO_DLPF_FS_VALUE	hide/gyro.h	11;"	d
+GYRO_DOWNSAMPLE	hide/old_main.c	537;"	d	file:
+GYRO_H__	hide/gyro.h	2;"	d
+GYRO_ID_ADDRESS	hide/gyro.h	7;"	d
+GYRO_PWRMGT_ADDRESS	hide/gyro.h	13;"	d
+GYRO_PWRMGT_VALUE	hide/gyro.h	14;"	d
+GYRO_SLAVE_ADDRESS	hide/gyro.h	4;"	d
+GYRO_TEMPH_ADDRESS	hide/gyro.h	17;"	d
+GYRO_TEMPL_ADDRESS	hide/gyro.h	18;"	d
+GYRO_XH_ADDRESS	hide/gyro.h	19;"	d
+GYRO_XL_ADDRESS	hide/gyro.h	20;"	d
+GYRO_YH_ADDRESS	hide/gyro.h	21;"	d
+GYRO_YL_ADDRESS	hide/gyro.h	22;"	d
+GYRO_ZH_ADDRESS	hide/gyro.h	23;"	d
+GYRO_ZL_ADDRESS	hide/gyro.h	24;"	d
+GZ	hide/old_main.c	52;"	d	file:
+INIT_TASK_DURATION_ITERS	gesture_main.c	28;"	d	file:
+INIT_TASK_DURATION_ITERS	hide/chain_main.c	28;"	d	file:
+INIT_TASK_DURATION_ITERS	main.c	28;"	d	file:
+INIT_TASK_DURATION_ITERS	main_vers/anomaly.c	34;"	d	file:
+INIT_TASK_DURATION_ITERS	main_vers/gesture_main.c	28;"	d	file:
+INIT_TASK_DURATION_ITERS	main_vers/prox_main.c	28;"	d	file:
+INIT_TASK_DURATION_ITERS	main_vers/prox_trigger.c	28;"	d	file:
+INIT_TASK_DURATION_ITERS	prox_main.c	28;"	d	file:
+INTERNAL1V2	hide/temp_sensor.c	6;"	d	file:
+LED_BOOST_100	proximity.h	143;"	d
+LED_BOOST_150	proximity.h	144;"	d
+LED_BOOST_200	proximity.h	145;"	d
+LED_BOOST_300	proximity.h	146;"	d
+LED_DRIVE_100MA	proximity.h	119;"	d
+LED_DRIVE_12_5MA	proximity.h	122;"	d
+LED_DRIVE_25MA	proximity.h	121;"	d
+LED_DRIVE_50MA	proximity.h	120;"	d
+LOG_PROX	main.c	36;"	d	file:
+MAGNETOMETER_CONFIG_REGISTER_A	hide/magnetometer.h	6;"	d
+MAGNETOMETER_CONFIG_REGISTER_B	hide/magnetometer.h	7;"	d
+MAGNETOMETER_DATA_OUTPUT_ADDRESS	hide/magnetometer.h	9;"	d
+MAGNETOMETER_GAIN_0	hide/magnetometer.h	12;"	d
+MAGNETOMETER_GAIN_1	hide/magnetometer.h	13;"	d
+MAGNETOMETER_GAIN_2	hide/magnetometer.h	14;"	d
+MAGNETOMETER_GAIN_3	hide/magnetometer.h	15;"	d
+MAGNETOMETER_GAIN_4	hide/magnetometer.h	16;"	d
+MAGNETOMETER_GAIN_5	hide/magnetometer.h	17;"	d
+MAGNETOMETER_GAIN_6	hide/magnetometer.h	18;"	d
+MAGNETOMETER_GAIN_7	hide/magnetometer.h	19;"	d
+MAGNETOMETER_H__	hide/magnetometer.h	2;"	d
+MAGNETOMETER_ID_ADDRESS	hide/magnetometer.h	10;"	d
+MAGNETOMETER_MODE_CONTINUOUS_OUTPUT	hide/magnetometer.h	21;"	d
+MAGNETOMETER_MODE_REGISTER_ADDRESS	hide/magnetometer.h	8;"	d
+MAGNETOMETER_MODE_SINGLE_OUTPUT	hide/magnetometer.h	22;"	d
+MAGNETOMETER_SLAVE_ADDRESS	hide/magnetometer.h	4;"	d
+MAG_DOWNSAMPLE	hide/old_main.c	536;"	d	file:
+MAX_DATA_SETS	proximity.h	238;"	d
+MAX_GESTS	main_vers/prox_trigger.c	39;"	d	file:
+MAX_GESTS	proximity.h	239;"	d
+MIN_DATA_SETS	main_vers/prox_trigger.c	38;"	d	file:
+MIN_DATA_SETS	proximity.h	237;"	d
+MX	hide/old_main.c	53;"	d	file:
+MY	hide/old_main.c	54;"	d	file:
+MY_DEBUG	proximity.h	21;"	d
+MZ	hide/old_main.c	55;"	d	file:
+NA_STATE	proximity.h	/^  NA_STATE,$/;"	e	enum:gest_dist_
+NEAR_STATE	proximity.h	/^  NEAR_STATE,$/;"	e	enum:gest_dist_
+NUM_AVGS	gesture_main.c	35;"	d	file:
+NUM_AVGS	hide/chain_main.c	35;"	d	file:
+NUM_AVGS	main_vers/anomaly.c	41;"	d	file:
+NUM_AVGS	main_vers/gesture_main.c	35;"	d	file:
+NUM_AVGS	main_vers/prox_main.c	35;"	d	file:
+NUM_AVGS	main_vers/prox_trigger.c	35;"	d	file:
+NUM_AVGS	prox_main.c	35;"	d	file:
+NUM_AVGS	proximity.h	234;"	d
+NUM_BLINKS_PER_TASK	gesture_main.c	32;"	d	file:
+NUM_BLINKS_PER_TASK	hide/chain_main.c	32;"	d	file:
+NUM_BLINKS_PER_TASK	main.c	32;"	d	file:
+NUM_BLINKS_PER_TASK	main_vers/anomaly.c	38;"	d	file:
+NUM_BLINKS_PER_TASK	main_vers/gesture_main.c	32;"	d	file:
+NUM_BLINKS_PER_TASK	main_vers/prox_main.c	32;"	d	file:
+NUM_BLINKS_PER_TASK	main_vers/prox_trigger.c	32;"	d	file:
+NUM_BLINKS_PER_TASK	prox_main.c	32;"	d	file:
+NUM_SAMPS	gesture_main.c	36;"	d	file:
+NUM_SAMPS	hide/chain_main.c	36;"	d	file:
+NUM_SAMPS	main_vers/anomaly.c	42;"	d	file:
+NUM_SAMPS	main_vers/gesture_main.c	36;"	d	file:
+NUM_SAMPS	main_vers/prox_main.c	36;"	d	file:
+NUM_SAMPS	main_vers/prox_trigger.c	36;"	d	file:
+NUM_SAMPS	prox_main.c	36;"	d	file:
+NUM_SAMPS	proximity.h	235;"	d
+NUM_WINDOWS	hide/old_main.c	36;"	d	file:
+OFF	proximity.h	105;"	d
+ON	proximity.h	106;"	d
+OUT	hide/pin_assign.h	6;"	d
+OUT	pin_assign.h	6;"	d
+OUT	pins.h	6;"	d
+PGAIN_1X	proximity.h	125;"	d
+PGAIN_2X	proximity.h	126;"	d
+PGAIN_4X	proximity.h	127;"	d
+PGAIN_8X	proximity.h	128;"	d
+PIN_ASSIGN_H	hide/pin_assign.h	2;"	d
+PIN_ASSIGN_H	pin_assign.h	2;"	d
+PIN_ASSIGN_H	pins.h	2;"	d
+PIN_AUX_0	pins.h	21;"	d
+PIN_AUX_1	hide/pin_assign.h	21;"	d
+PIN_AUX_1	pin_assign.h	21;"	d
+PIN_AUX_1	pins.h	22;"	d
+PIN_AUX_2	hide/pin_assign.h	22;"	d
+PIN_AUX_2	pin_assign.h	22;"	d
+PIN_AUX_2	pins.h	23;"	d
+PIN_AUX_3	hide/pin_assign.h	26;"	d
+PIN_AUX_3	hide/pin_assign.h	38;"	d
+PIN_AUX_3	hide/pin_assign.h	43;"	d
+PIN_AUX_3	pin_assign.h	26;"	d
+PIN_AUX_3	pin_assign.h	38;"	d
+PIN_AUX_3	pin_assign.h	43;"	d
+PIN_AUX_3	pins.h	27;"	d
+PIN_AUX_3	pins.h	32;"	d
+PIN_AUX_4	hide/pin_assign.h	39;"	d
+PIN_AUX_4	pin_assign.h	39;"	d
+PIN_AUX_4	pins.h	33;"	d
+PIN_AUX_5	hide/pin_assign.h	40;"	d
+PIN_AUX_5	pin_assign.h	40;"	d
+PIN_AUX_5	pins.h	34;"	d
+PIN_DEBUG_1	pins.h	40;"	d
+PIN_DEBUG_2	pins.h	41;"	d
+PIN_DEBUG_3	pins.h	42;"	d
+PIN_LED_1	hide/pin_assign.h	16;"	d
+PIN_LED_1	hide/pin_assign.h	31;"	d
+PIN_LED_1	pin_assign.h	16;"	d
+PIN_LED_1	pin_assign.h	31;"	d
+PIN_LED_1	pins.h	16;"	d
+PIN_LED_1	pins.h	47;"	d
+PIN_LED_2	hide/pin_assign.h	18;"	d
+PIN_LED_2	hide/pin_assign.h	33;"	d
+PIN_LED_2	pin_assign.h	18;"	d
+PIN_LED_2	pin_assign.h	33;"	d
+PIN_LED_2	pins.h	18;"	d
+PIN_LED_2	pins.h	49;"	d
+PIN_LED_3	hide/pin_assign.h	35;"	d
+PIN_LED_3	pin_assign.h	35;"	d
+PIN_LED_3	pins.h	51;"	d
+PORT_AUX	hide/pin_assign.h	20;"	d
+PORT_AUX	hide/pin_assign.h	37;"	d
+PORT_AUX	pin_assign.h	20;"	d
+PORT_AUX	pin_assign.h	37;"	d
+PORT_AUX	pins.h	20;"	d
+PORT_AUX	pins.h	31;"	d
+PORT_AUX3	hide/pin_assign.h	25;"	d
+PORT_AUX3	hide/pin_assign.h	42;"	d
+PORT_AUX3	pin_assign.h	25;"	d
+PORT_AUX3	pin_assign.h	42;"	d
+PORT_AUX3	pins.h	26;"	d
+PORT_DEBUG	pins.h	39;"	d
+PORT_LED_1	hide/pin_assign.h	15;"	d
+PORT_LED_1	hide/pin_assign.h	30;"	d
+PORT_LED_1	pin_assign.h	15;"	d
+PORT_LED_1	pin_assign.h	30;"	d
+PORT_LED_1	pins.h	15;"	d
+PORT_LED_1	pins.h	46;"	d
+PORT_LED_2	hide/pin_assign.h	17;"	d
+PORT_LED_2	hide/pin_assign.h	32;"	d
+PORT_LED_2	pin_assign.h	17;"	d
+PORT_LED_2	pin_assign.h	32;"	d
+PORT_LED_2	pins.h	17;"	d
+PORT_LED_2	pins.h	48;"	d
+PORT_LED_3	hide/pin_assign.h	34;"	d
+PORT_LED_3	pin_assign.h	34;"	d
+PORT_LED_3	pins.h	50;"	d
+POWER	proximity.h	109;"	d
+PROXIMITY	proximity.h	111;"	d
+PROXIMITY_H	proximity.h	15;"	d
+PROXIMITY_INT	proximity.h	114;"	d
+READ_PROX_DELAY_CYCLES	proximity.h	243;"	d
+REFV_MASK	hide/temp_sensor.c	8;"	d	file:
+REF_MASK	hide/temp_sensor.c	7;"	d	file:
+SAMPGET	hide/old_main.c	44;"	d	file:
+SAMPLE_SIZE	hide/old_main.c	39;"	d	file:
+SAMPLE_WINDOW_SIZE	hide/old_main.c	40;"	d	file:
+TASK_START_DURATION_ITERS	gesture_main.c	29;"	d	file:
+TASK_START_DURATION_ITERS	hide/chain_main.c	29;"	d	file:
+TASK_START_DURATION_ITERS	main.c	29;"	d	file:
+TASK_START_DURATION_ITERS	main_vers/anomaly.c	35;"	d	file:
+TASK_START_DURATION_ITERS	main_vers/gesture_main.c	29;"	d	file:
+TASK_START_DURATION_ITERS	main_vers/prox_main.c	29;"	d	file:
+TASK_START_DURATION_ITERS	main_vers/prox_trigger.c	29;"	d	file:
+TASK_START_DURATION_ITERS	prox_main.c	29;"	d	file:
+TEMP	hide/old_main.c	49;"	d	file:
+TEMPH	hide/gyro.h	26;"	d
+TEMPL	hide/gyro.h	27;"	d
+TF_TEMP_15_30	hide/temp_sensor.c	2;"	d	file:
+TF_TEMP_15_85	hide/temp_sensor.c	3;"	d	file:
+TLVStruct	hide/temp_sensor.c	4;"	d	file:
+WAIT	proximity.h	112;"	d
+WAIT_TICKS	gesture_main.c	33;"	d	file:
+WAIT_TICKS	hide/chain_main.c	33;"	d	file:
+WAIT_TICKS	main.c	33;"	d	file:
+WAIT_TICKS	main_vers/anomaly.c	39;"	d	file:
+WAIT_TICKS	main_vers/gesture_main.c	33;"	d	file:
+WAIT_TICKS	main_vers/prox_main.c	33;"	d	file:
+WAIT_TICKS	main_vers/prox_trigger.c	33;"	d	file:
+WAIT_TICKS	prox_main.c	33;"	d	file:
+WAIT_TICK_DURATION_ITERS	gesture_main.c	31;"	d	file:
+WAIT_TICK_DURATION_ITERS	hide/chain_main.c	31;"	d	file:
+WAIT_TICK_DURATION_ITERS	main.c	31;"	d	file:
+WAIT_TICK_DURATION_ITERS	main_vers/anomaly.c	37;"	d	file:
+WAIT_TICK_DURATION_ITERS	main_vers/gesture_main.c	31;"	d	file:
+WAIT_TICK_DURATION_ITERS	main_vers/prox_main.c	31;"	d	file:
+WAIT_TICK_DURATION_ITERS	main_vers/prox_trigger.c	31;"	d	file:
+WAIT_TICK_DURATION_ITERS	prox_main.c	31;"	d	file:
+WATCHPOINT	gesture_main.c	24;"	d	file:
+WATCHPOINT	hide/chain_main.c	24;"	d	file:
+WATCHPOINT	hide/main.c	24;"	d	file:
+WATCHPOINT	hide/normal_main.c	24;"	d	file:
+WATCHPOINT	hide/old_main.c	27;"	d	file:
+WATCHPOINT	hide/power_test_normal_main.c	24;"	d	file:
+WATCHPOINT	main.c	24;"	d	file:
+WATCHPOINT	main_vers/anomaly.c	30;"	d	file:
+WATCHPOINT	main_vers/gesture_main.c	24;"	d	file:
+WATCHPOINT	main_vers/normal_main.c	24;"	d	file:
+WATCHPOINT	main_vers/prox_main.c	24;"	d	file:
+WATCHPOINT	main_vers/prox_trigger.c	24;"	d	file:
+WATCHPOINT	normal_main.c	24;"	d	file:
+WATCHPOINT	prox_main.c	24;"	d	file:
+WATCHPOINT_BOOT	hide/old_main.c	119;"	d	file:
+WATCHPOINT_SAMPLE	hide/old_main.c	120;"	d	file:
+WATCHPOINT_UPDATE_WINDOW_START	hide/old_main.c	122;"	d	file:
+WATCHPOINT_WINDOW	hide/old_main.c	121;"	d	file:
+WINDOW_DIV_SHIFT	hide/old_main.c	35;"	d	file:
+WINDOW_SIZE	hide/old_main.c	38;"	d	file:
+WINGET	hide/old_main.c	47;"	d	file:
+WIN_WINDOW_SIZE	hide/old_main.c	41;"	d	file:
+XH	hide/gyro.h	28;"	d
+XL	hide/gyro.h	29;"	d
+YH	hide/gyro.h	30;"	d
+YL	hide/gyro.h	31;"	d
+ZERO	hide/old_main.c	56;"	d	file:
+ZH	hide/gyro.h	32;"	d
+ZL	hide/gyro.h	33;"	d
+_edb_info_t	hide/old_main.c	/^typedef struct _edb_info_t{$/;"	s	file:
+_samp_t	hide/old_main.c	/^typedef struct _samp_t{$/;"	s	file:
+abs	proximity.c	/^static uint8_t abs(int8_t input){$/;"	f	file:
+abs16	proximity.c	/^static int16_t abs16(int16_t input){$/;"	f	file:
+anomalyCheck	proximity.c	/^int8_t anomalyCheck(uint8_t sample, uint8_t baseline, uint8_t allowedDev){$/;"	f
+averages	hide/old_main.c	/^  samp_t averages[NUM_WINDOWS];$/;"	m	struct:_edb_info_t	file:
+blink_led1	gesture_main.c	/^static void blink_led1(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led1	hide/chain_main.c	/^static void blink_led1(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led1	main_vers/anomaly.c	/^static void blink_led1(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led1	main_vers/gesture_main.c	/^static void blink_led1(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led1	main_vers/prox_main.c	/^static void blink_led1(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led1	prox_main.c	/^static void blink_led1(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led2	gesture_main.c	/^static void blink_led2(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led2	hide/chain_main.c	/^static void blink_led2(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led2	main_vers/anomaly.c	/^static void blink_led2(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led2	main_vers/gesture_main.c	/^static void blink_led2(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led2	main_vers/prox_main.c	/^static void blink_led2(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+blink_led2	prox_main.c	/^static void blink_led2(unsigned blinks, unsigned duty_cycle) {$/;"	f	file:
+burn	gesture_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	hide/chain_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	hide/main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	hide/normal_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	hide/power_test_normal_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	main_vers/anomaly.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	main_vers/gesture_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	main_vers/normal_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	main_vers/prox_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	main_vers/prox_trigger.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	normal_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+burn	prox_main.c	/^static void burn(uint32_t iters)$/;"	f	file:
+check_mode	proximity.c	/^void check_mode(void){$/;"	f
+curbankcfg	main.c	/^__nv capybara_bankmask_t curbankcfg = DEFAULT_CFG;	$/;"	v
+curprchg	main.c	/^__nv prechg_status_t curprchg;$/;"	v
+d_data	proximity.h	/^    uint8_t d_data[32];$/;"	m	struct:gesture_data_t_
+decodeGesture	proximity.c	/^gest_dir decodeGesture(void){$/;"	f
+delay	gesture_main.c	/^static void delay(uint32_t cycles)$/;"	f	file:
+delay	hide/chain_main.c	/^static void delay(uint32_t cycles)$/;"	f	file:
+delay	hide/main.c	/^static void delay(uint32_t cycles)$/;"	f	file:
+delay	hide/old_main.c	/^static void delay(uint32_t cycles)$/;"	f	file:
+delay	hide/power_test_normal_main.c	/^static void delay(uint32_t cycles)$/;"	f	file:
+delay	main.c	/^void delay(uint32_t cycles)$/;"	f
+delay	main_vers/anomaly.c	/^void delay(uint32_t cycles)$/;"	f
+delay	main_vers/gesture_main.c	/^static void delay(uint32_t cycles)$/;"	f	file:
+delay	main_vers/prox_main.c	/^static void delay(uint32_t cycles)$/;"	f	file:
+delay	main_vers/prox_trigger.c	/^void delay(uint32_t cycles)$/;"	f
+delay	prox_main.c	/^static void delay(uint32_t cycles)$/;"	f	file:
+dir	proximity.h	/^	gest_dir dir; $/;"	m	struct:gesture_t_
+disableGesture	proximity.c	/^void disableGesture(){$/;"	f
+div	proximity.c	/^static int16_t div(int16_t num, int16_t denom){$/;"	f	file:
+edb_info	hide/old_main.c	/^__nv edb_info_t edb_info;$/;"	v
+edb_info_t	hide/old_main.c	/^} edb_info_t;$/;"	t	typeref:struct:_edb_info_t	file:
+enableGesture	proximity.c	/^void enableGesture(void){$/;"	f
+enableProximitySensor	proximity.c	/^void enableProximitySensor(void){$/;"	f
+encode_IO	main.c	/^void encode_IO(gest_dir val){$/;"	f
+gest_dir	proximity.h	/^}gest_dir;$/;"	t	typeref:enum:gest_dir_
+gest_dir_	proximity.h	/^typedef enum gest_dir_ {$/;"	g
+gest_dist	proximity.h	/^}gest_dist;$/;"	t	typeref:enum:gest_dist_
+gest_dist_	proximity.h	/^typedef enum gest_dist_{$/;"	g
+gesture_data_t	proximity.h	/^}gesture_data_t;$/;"	t	typeref:struct:gesture_data_t_
+gesture_data_t_	proximity.h	/^typedef struct gesture_data_t_{$/;"	s
+gesture_far_count_	proximity.h	/^int gesture_far_count_; $/;"	v
+gesture_lr_count_	proximity.h	/^int gesture_lr_count_; $/;"	v
+gesture_lr_delta_	proximity.h	/^int gesture_lr_delta_; $/;"	v
+gesture_motion_	proximity.h	/^int gesture_motion_; $/;"	v
+gesture_near_count_	proximity.h	/^int gesture_near_count_;$/;"	v
+gesture_state_	proximity.h	/^int gesture_state_; $/;"	v
+gesture_t	proximity.h	/^}gesture_t;$/;"	t	typeref:struct:gesture_t_
+gesture_t_	proximity.h	/^typedef struct gesture_t_ {$/;"	s
+gesture_ud_count_	proximity.h	/^int gesture_ud_count_; $/;"	v
+gesture_ud_delta_	proximity.h	/^int gesture_ud_delta_; $/;"	v
+getGesture	proximity.c	/^int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps){$/;"	f
+getGestureLoop	proximity.c	/^int8_t  getGestureLoop(gesture_data_t *gesture_data_, uint8_t *num_samps){$/;"	f
+get_calibrated_adc	hide/temp_sensor.c	/^unsigned int get_calibrated_adc () {$/;"	f
+gx	hide/old_main.c	/^  int8_t gx;$/;"	m	struct:_samp_t	file:
+gy	hide/old_main.c	/^  int8_t gy;$/;"	m	struct:_samp_t	file:
+gyroBytes	hide/gyro.c	/^const unsigned int gyroBytes = 8;$/;"	v
+gyroId	hide/gyro.c	/^volatile unsigned char gyroId = 0;$/;"	v
+gyroIdBytes	hide/gyro.c	/^const unsigned int gyroIdBytes = 1;$/;"	v
+gyro_init	hide/gyro.c	/^void gyro_init(void) {$/;"	f
+gyro_read	hide/gyro.c	/^void gyro_read(gyro_t* coordinates) {$/;"	f
+gyro_t	hide/gyro.h	/^} gyro_t;$/;"	t	typeref:struct:__anon1
+gz	hide/old_main.c	/^  int8_t gz;$/;"	m	struct:_samp_t	file:
+i2c_setup	gesture_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	hide/chain_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	hide/main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	hide/normal_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	hide/old_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	hide/power_test_normal_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	main_vers/anomaly.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	main_vers/gesture_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	main_vers/normal_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	main_vers/prox_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	main_vers/prox_trigger.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	normal_main.c	/^void i2c_setup(void) {$/;"	f
+i2c_setup	prox_main.c	/^void i2c_setup(void) {$/;"	f
+in_threshold	proximity.h	/^    uint8_t in_threshold;$/;"	m	struct:gesture_data_t_
+index	proximity.h	/^    uint8_t index;$/;"	m	struct:gesture_data_t_
+init	gesture_main.c	/^void init()$/;"	f
+init	hide/chain_main.c	/^void init()$/;"	f
+init	hide/main.c	/^void init()$/;"	f
+init	hide/normal_main.c	/^void init()$/;"	f
+init	hide/power_test_normal_main.c	/^void init()$/;"	f
+init	main.c	/^void init()$/;"	f
+init	main_vers/anomaly.c	/^void init()$/;"	f
+init	main_vers/gesture_main.c	/^void init()$/;"	f
+init	main_vers/normal_main.c	/^void init()$/;"	f
+init	main_vers/prox_main.c	/^void init()$/;"	f
+init	main_vers/prox_trigger.c	/^void init()$/;"	f
+init	normal_main.c	/^void init()$/;"	f
+init	prox_main.c	/^void init()$/;"	f
+init_temp_sensor	hide/temp_sensor.c	/^void init_temp_sensor() {$/;"	f
+initializeHardware	gesture_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	hide/chain_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	hide/main.c	/^void initializeHardware()$/;"	f
+initializeHardware	hide/normal_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	hide/old_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	hide/power_test_normal_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	main.c	/^void initializeHardware()$/;"	f
+initializeHardware	main_vers/anomaly.c	/^void initializeHardware()$/;"	f
+initializeHardware	main_vers/gesture_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	main_vers/normal_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	main_vers/prox_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	main_vers/prox_trigger.c	/^void initializeHardware()$/;"	f
+initializeHardware	normal_main.c	/^void initializeHardware()$/;"	f
+initializeHardware	prox_main.c	/^void initializeHardware()$/;"	f
+l_data	proximity.h	/^    uint8_t l_data[32];$/;"	m	struct:gesture_data_t_
+magnet_t	hide/magnetometer.h	/^} magnet_t;$/;"	t	typeref:struct:__anon2
+magnetometerBytes	hide/magnetometer.c	/^const unsigned int magnetometerBytes = 6;$/;"	v
+magnetometerId	hide/magnetometer.c	/^volatile unsigned char magnetometerId[3] = { 0, 0, 0 };$/;"	v
+magnetometerIdBytes	hide/magnetometer.c	/^const unsigned int magnetometerIdBytes = 3;$/;"	v
+magnetometer_init	hide/magnetometer.c	/^void magnetometer_init(void) {$/;"	f
+magnetometer_read	hide/magnetometer.c	/^void magnetometer_read(magnet_t* coordinates) {$/;"	f
+main	hide/main.c	/^int main(void){$/;"	f
+main	hide/normal_main.c	/^int main(void){$/;"	f
+main	hide/power_test_normal_main.c	/^int main(void){$/;"	f
+main	main_vers/normal_main.c	/^int main(void){$/;"	f
+main	normal_main.c	/^int main(void){$/;"	f
+msg_flag_vals	main.c	/^struct msg_flag_vals{$/;"	s	file:
+msg_flag_vals	main_vers/prox_trigger.c	/^struct msg_flag_vals{$/;"	s	file:
+msg_gest_data	main.c	/^struct msg_gest_data{$/;"	s	file:
+msg_gest_data	main_vers/prox_trigger.c	/^struct msg_gest_data{$/;"	s	file:
+msg_gestures	main.c	/^struct msg_gestures{$/;"	s	file:
+msg_index	gesture_main.c	/^struct msg_index{$/;"	s	file:
+msg_index	hide/chain_main.c	/^struct msg_index{$/;"	s	file:
+msg_index	hide/old_main.c	/^struct msg_index{$/;"	s	file:
+msg_index	main_vers/anomaly.c	/^struct msg_index{$/;"	s	file:
+msg_index	main_vers/gesture_main.c	/^struct msg_index{$/;"	s	file:
+msg_index	main_vers/prox_main.c	/^struct msg_index{$/;"	s	file:
+msg_index	prox_main.c	/^struct msg_index{$/;"	s	file:
+msg_samp_info	gesture_main.c	/^struct msg_samp_info{$/;"	s	file:
+msg_samp_info	hide/chain_main.c	/^struct msg_samp_info{$/;"	s	file:
+msg_samp_info	main_vers/anomaly.c	/^struct msg_samp_info{$/;"	s	file:
+msg_samp_info	main_vers/gesture_main.c	/^struct msg_samp_info{$/;"	s	file:
+msg_samp_info	main_vers/prox_main.c	/^struct msg_samp_info{$/;"	s	file:
+msg_samp_info	prox_main.c	/^struct msg_samp_info{$/;"	s	file:
+msg_sample	hide/old_main.c	/^struct msg_sample{$/;"	s	file:
+msg_sample_avg_in	hide/old_main.c	/^struct msg_sample_avg_in{$/;"	s	file:
+msg_sample_avg_out	hide/old_main.c	/^struct msg_sample_avg_out{$/;"	s	file:
+msg_sample_window	hide/old_main.c	/^struct msg_sample_window{$/;"	s	file:
+msg_sample_windows	hide/old_main.c	/^struct msg_sample_windows{$/;"	s	file:
+msg_samples	gesture_main.c	/^struct msg_samples{$/;"	s	file:
+msg_samples	hide/chain_main.c	/^struct msg_samples{$/;"	s	file:
+msg_samples	main_vers/anomaly.c	/^struct msg_samples{$/;"	s	file:
+msg_samples	main_vers/gesture_main.c	/^struct msg_samples{$/;"	s	file:
+msg_samples	main_vers/prox_main.c	/^struct msg_samples{$/;"	s	file:
+msg_samples	main_vers/prox_trigger.c	/^struct msg_samples{$/;"	s	file:
+msg_samples	prox_main.c	/^struct msg_samples{$/;"	s	file:
+msg_self_gest_data	main.c	/^struct msg_self_gest_data{$/;"	s	file:
+msg_self_gest_data	main_vers/prox_trigger.c	/^struct msg_self_gest_data{$/;"	s	file:
+msg_self_index	gesture_main.c	/^struct msg_self_index{$/;"	s	file:
+msg_self_index	hide/chain_main.c	/^struct msg_self_index{$/;"	s	file:
+msg_self_index	hide/old_main.c	/^struct msg_self_index{$/;"	s	file:
+msg_self_index	main_vers/anomaly.c	/^struct msg_self_index{$/;"	s	file:
+msg_self_index	main_vers/gesture_main.c	/^struct msg_self_index{$/;"	s	file:
+msg_self_index	main_vers/prox_main.c	/^struct msg_self_index{$/;"	s	file:
+msg_self_index	prox_main.c	/^struct msg_self_index{$/;"	s	file:
+msg_self_samples	gesture_main.c	/^struct msg_self_samples{$/;"	s	file:
+msg_self_samples	hide/chain_main.c	/^struct msg_self_samples{$/;"	s	file:
+msg_self_samples	main_vers/anomaly.c	/^struct msg_self_samples{$/;"	s	file:
+msg_self_samples	main_vers/gesture_main.c	/^struct msg_self_samples{$/;"	s	file:
+msg_self_samples	main_vers/prox_main.c	/^struct msg_self_samples{$/;"	s	file:
+msg_self_samples	prox_main.c	/^struct msg_self_samples{$/;"	s	file:
+msg_self_stale_flag	main.c	/^struct msg_self_stale_flag{$/;"	s	file:
+msg_self_stale_flag	main_vers/prox_trigger.c	/^struct msg_self_stale_flag{$/;"	s	file:
+msg_self_warningParams	gesture_main.c	/^struct msg_self_warningParams{$/;"	s	file:
+msg_self_warningParams	hide/chain_main.c	/^struct msg_self_warningParams{$/;"	s	file:
+msg_self_warningParams	main_vers/anomaly.c	/^struct msg_self_warningParams{$/;"	s	file:
+msg_self_warningParams	main_vers/gesture_main.c	/^struct msg_self_warningParams{$/;"	s	file:
+msg_self_warningParams	main_vers/prox_main.c	/^struct msg_self_warningParams{$/;"	s	file:
+msg_self_warningParams	prox_main.c	/^struct msg_self_warningParams{$/;"	s	file:
+msg_warningParams	gesture_main.c	/^struct msg_warningParams{$/;"	s	file:
+msg_warningParams	hide/chain_main.c	/^struct msg_warningParams{$/;"	s	file:
+msg_warningParams	main_vers/anomaly.c	/^struct msg_warningParams{$/;"	s	file:
+msg_warningParams	main_vers/gesture_main.c	/^struct msg_warningParams{$/;"	s	file:
+msg_warningParams	main_vers/prox_main.c	/^struct msg_warningParams{$/;"	s	file:
+msg_warningParams	prox_main.c	/^struct msg_warningParams{$/;"	s	file:
+mx	hide/old_main.c	/^  int8_t mx;$/;"	m	struct:_samp_t	file:
+my	hide/old_main.c	/^  int8_t my;$/;"	m	struct:_samp_t	file:
+mz	hide/old_main.c	/^  int8_t mz;$/;"	m	struct:_samp_t	file:
+one_blink_led1	hide/main.c	/^static void one_blink_led1(uint32_t time){$/;"	f	file:
+one_blink_led1	hide/power_test_normal_main.c	/^static void one_blink_led1(uint32_t time){$/;"	f	file:
+one_blink_led2	hide/main.c	/^static void one_blink_led2(uint32_t time){$/;"	f	file:
+one_blink_led2	hide/power_test_normal_main.c	/^static void one_blink_led2(uint32_t time){$/;"	f	file:
+out_threshold	proximity.h	/^    uint8_t out_threshold;$/;"	m	struct:gesture_data_t_
+printsamp	hide/old_main.c	/^void printsamp(int t, int gx, int gy, int gz, int mx, int my, int mz){$/;"	f
+processGestureData	proximity.c	/^int8_t processGestureData(gesture_data_t gesture_data_) {$/;"	f
+proximityId	proximity.c	/^volatile unsigned char proximityId = 0;$/;"	v
+proximity_init	proximity.c	/^void proximity_init(void) {$/;"	f
+r_data	proximity.h	/^    uint8_t r_data[32];$/;"	m	struct:gesture_data_t_
+rawGyroData	hide/gyro.c	/^volatile unsigned char rawGyroData[8] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };$/;"	v
+rawMagData	hide/magnetometer.c	/^volatile unsigned char rawMagData[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };$/;"	v
+readDataByte	proximity.c	/^uint8_t readDataByte(){$/;"	f
+readProximity	proximity.c	/^uint8_t readProximity(){$/;"	f
+read_gyro	hide/old_main.c	/^void read_gyro(int *x,$/;"	f
+read_mag	hide/old_main.c	/^void read_mag(int *x,$/;"	f
+read_temperature_sensor	hide/temp_sensor.c	/^signed short read_temperature_sensor() {$/;"	f
+resetGestureFields	proximity.c	/^void resetGestureFields(gesture_data_t *gesture){$/;"	f
+restartTransmit	proximity.c	/^void restartTransmit(void){$/;"	f
+samp_t	hide/old_main.c	/^} samp_t;$/;"	t	typeref:struct:_samp_t	file:
+sensor_busy	hide/temp_sensor.c	/^unsigned char sensor_busy = 0;$/;"	v
+task_average	gesture_main.c	/^void task_average()$/;"	f
+task_average	hide/chain_main.c	/^void task_average()$/;"	f
+task_average	main_vers/anomaly.c	/^void task_average()$/;"	f
+task_average	main_vers/gesture_main.c	/^void task_average()$/;"	f
+task_average	main_vers/prox_main.c	/^void task_average()$/;"	f
+task_average	prox_main.c	/^void task_average()$/;"	f
+task_detect	gesture_main.c	/^void task_detect()$/;"	f
+task_detect	hide/chain_main.c	/^void task_detect()$/;"	f
+task_detect	main_vers/anomaly.c	/^void task_detect()$/;"	f
+task_detect	main_vers/gesture_main.c	/^void task_detect()$/;"	f
+task_detect	main_vers/prox_main.c	/^void task_detect()$/;"	f
+task_detect	prox_main.c	/^void task_detect()$/;"	f
+task_gestCalc	main.c	/^void task_gestCalc()$/;"	f
+task_gestCalc	main_vers/prox_trigger.c	/^void task_gestCalc()$/;"	f
+task_gestCapture	main.c	/^void task_gestCapture()$/;"	f
+task_gestCapture	main_vers/prox_trigger.c	/^void task_gestCapture()$/;"	f
+task_init	gesture_main.c	/^void task_init()$/;"	f
+task_init	hide/chain_main.c	/^void task_init()$/;"	f
+task_init	hide/old_main.c	/^void task_init()$/;"	f
+task_init	main.c	/^void task_init()$/;"	f
+task_init	main_vers/anomaly.c	/^void task_init()$/;"	f
+task_init	main_vers/gesture_main.c	/^void task_init()$/;"	f
+task_init	main_vers/prox_main.c	/^void task_init()$/;"	f
+task_init	main_vers/prox_trigger.c	/^void task_init()$/;"	f
+task_init	prox_main.c	/^void task_init()$/;"	f
+task_sample	gesture_main.c	/^void task_sample()$/;"	f
+task_sample	hide/chain_main.c	/^void task_sample()$/;"	f
+task_sample	hide/old_main.c	/^void task_sample(){$/;"	f
+task_sample	main.c	/^void task_sample()$/;"	f
+task_sample	main_vers/anomaly.c	/^void task_sample()$/;"	f
+task_sample	main_vers/gesture_main.c	/^void task_sample()$/;"	f
+task_sample	main_vers/prox_main.c	/^void task_sample()$/;"	f
+task_sample	main_vers/prox_trigger.c	/^void task_sample()$/;"	f
+task_sample	prox_main.c	/^void task_sample()$/;"	f
+task_update_proxy	hide/old_main.c	/^void task_update_proxy(){$/;"	f
+task_update_window	hide/old_main.c	/^void task_update_window(){$/;"	f
+task_update_window_start	hide/old_main.c	/^void task_update_window_start(){$/;"	f
+task_window	hide/old_main.c	/^void task_window(){$/;"	f
+temp	hide/old_main.c	/^  int8_t temp;$/;"	m	struct:_samp_t	file:
+total_gestures	proximity.h	/^    uint8_t total_gestures;$/;"	m	struct:gesture_data_t_
+u_data	proximity.h	/^    uint8_t u_data[32];$/;"	m	struct:gesture_data_t_
+usrBank	gesture_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	hide/chain_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	hide/main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	hide/normal_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	hide/power_test_normal_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	main_vers/anomaly.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	main_vers/gesture_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	main_vers/normal_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	main_vers/prox_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	main_vers/prox_trigger.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	normal_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+usrBank	prox_main.c	/^uint8_t usrBank[USRBANK_SIZE];$/;"	v
+work_x	gesture_main.c	/^volatile unsigned work_x;$/;"	v
+work_x	hide/chain_main.c	/^volatile unsigned work_x;$/;"	v
+work_x	hide/main.c	/^volatile unsigned work_x; $/;"	v
+work_x	hide/normal_main.c	/^volatile unsigned work_x; $/;"	v
+work_x	hide/power_test_normal_main.c	/^volatile unsigned work_x; $/;"	v
+work_x	main.c	/^volatile unsigned work_x;$/;"	v
+work_x	main_vers/anomaly.c	/^volatile unsigned work_x;$/;"	v
+work_x	main_vers/gesture_main.c	/^volatile unsigned work_x;$/;"	v
+work_x	main_vers/normal_main.c	/^volatile unsigned work_x; $/;"	v
+work_x	main_vers/prox_main.c	/^volatile unsigned work_x;$/;"	v
+work_x	main_vers/prox_trigger.c	/^volatile unsigned work_x;$/;"	v
+work_x	normal_main.c	/^volatile unsigned work_x; $/;"	v
+work_x	prox_main.c	/^volatile unsigned work_x;$/;"	v
+writeDataByte	proximity.c	/^void writeDataByte(uint8_t reg, uint8_t val){$/;"	f
+writeSingleByte	proximity.c	/^void writeSingleByte(uint8_t val){$/;"	f
+write_app_output	hide/old_main.c	/^static void write_app_output(uint8_t *output, unsigned *len)$/;"	f	file:
+x	hide/gyro.h	/^  int x;$/;"	m	struct:__anon1
+x	hide/magnetometer.h	/^  int x;$/;"	m	struct:__anon2
+y	hide/gyro.h	/^  int y;$/;"	m	struct:__anon1
+y	hide/magnetometer.h	/^  int y;$/;"	m	struct:__anon2
+z	hide/gyro.h	/^  int z;$/;"	m	struct:__anon1
+z	hide/magnetometer.h	/^  int z;$/;"	m	struct:__anon2

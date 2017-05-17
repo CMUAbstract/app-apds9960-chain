@@ -1,3 +1,19 @@
+ifneq ($(LIBCAPYBARA_PIN_VBOOST_OK),)
+LOCAL_CFLAGS += \
+	-DLIBCAPYBARA_PORT_VBOOST_OK=$(firstword $(subst ., ,$(LIBCAPYBARA_PIN_VBOOST_OK))) \
+	-DLIBCAPYBARA_PIN_VBOOST_OK=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_VBOOST_OK)))
+else
+$(error Port and pin for VBOOST_OK signal must be defined with LIBCAPYBARA_VBOOST_OK_PIN, e.g. '2.3')
+endif
+
+ifneq ($(LIBCAPYBARA_PIN_BOOST_SW),)
+LOCAL_CFLAGS += \
+	-DLIBCAPYBARA_PORT_BOOST_SW=$(firstword $(subst ., ,$(LIBCAPYBARA_PIN_BOOST_SW))) \
+	-DLIBCAPYBARA_PIN_BOOST_SW=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_BOOST_SW)))
+else
+$(error Port and pin for BOOST_SW signal must be defined with LIBCAPYBARA_BOOST_SW_PIN, e.g. '2.3')
+endif
+
 LOCAL_CFLAGS += -DLIBCAPYBARA_SWITCH_DESIGN__$(LIBCAPYBARA_SWITCH_DESIGN)
 LOCAL_CFLAGS += -DLIBCAPYBARA_SWITCH_CONTROL__$(LIBCAPYBARA_SWITCH_CONTROL)
 

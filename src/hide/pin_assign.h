@@ -18,48 +18,29 @@
 #define     PIN_LED_2            6
 
 #define     PORT_AUX            3
-#define 		PIN_AUX_0						3
-#define     PIN_AUX_1           4
-#define     PIN_AUX_2           5
+#define        PIN_AUX_1            4
+#define        PIN_AUX_2            5
 
 
-#define     PORT_AUX3           1
-#define     PIN_AUX_3           4
+#define        PORT_AUX3            1
+#define        PIN_AUX_3            4
 
 #elif defined(BOARD_MSP_TS430)
 
-#define     PORT_AUX            3
-#define     PIN_AUX_3           4
-#define     PIN_AUX_4           5
-#define			PIN_AUX_5					  6	
-
-
-#elif defined(BOARD_CAPYBARA)
-
-#define PORT_DEBUG							3
-#define PIN_DEBUG_1							4
-#define PIN_DEBUG_2							5
-#define PIN_DEBUG_3							6
-
-#define PORT_LOAD 3
-#define PIN_LOAD  4
-
-#define PORT_CAPYBARA_CFG 3
-#define PIN_CAPYBARA_CFG  5
-
-#define PORT_SENSE_SW 3
-#define PIN_SENSE_SW  7
-
-
-#elif defined(BOARD_SPRITE_APP_SOCKET_RHA)
-
 #define     PORT_LED_1           1
-#define     PIN_LED_1            0
+#define     PIN_LED_1            1
 #define     PORT_LED_2           1
 #define     PIN_LED_2            2
 #define     PORT_LED_3           1
 #define     PIN_LED_3            0
 
+#define     PORT_AUX            1
+#define     PIN_AUX_3           3
+#define     PIN_AUX_4           4
+#define			PIN_AUX_5					  5	
+
+#define     PORT_AUX3           1
+#define     PIN_AUX_3           4
 
 #endif // BOARD_*
 
