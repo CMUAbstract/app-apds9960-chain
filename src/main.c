@@ -120,9 +120,7 @@ void initializeHardware(void);
 
 void init()
 {
-  //WISP_init();
-  
-  //Handle usual init stuff 
+ //Handle usual init stuff 
   msp_watchdog_disable(); 
   msp_gpio_unlock(); 
   __enable_interrupt(); 
@@ -137,33 +135,39 @@ void init()
   GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
   GPIO(PORT_SENSE_SW, DIR) |= BIT(PIN_SENSE_SW);
 
-  capybara_config_banks(0xf);
+  capybara_config_banks(0x7);
   capybara_wait_for_supply();
 
 
-    // Turn on sensor power supply
-    GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
+  // Turn on sensor power supply
+  GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
 
-    // In ~1ms (but not right now), our supply voltage might drop, due to
-    // charging of sensor caps that may overwhelm the booster briefly. We
-    // need to wait for the drop until we can wait for supply to stabilize
-    // using the VBOOST_OK supervisor, which we do below. This code works
-    // fine if there is no drop in the supply voltage at all.
-    msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
-    capybara_wait_for_supply();
+  // In ~1ms (but not right now), our supply voltage might drop, due to
+  // charging of sensor caps that may overwhelm the booster briefly. We
+  // need to wait for the drop until we can wait for supply to stabilize
+  // using the VBOOST_OK supervisor, which we do below. This code works
+  // fine if there is no drop in the supply voltage at all.
+  msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
+  capybara_wait_for_supply();
 
-    while(1) {
-        __bis_SR_register(LPM4_bits);
-    }
+//  while(1) {
+//      __bis_SR_register(LPM4_bits);
+//  }
+//
+  GPIO(PORT_DEBUG,OUT) |= BIT(PIN_DEBUG_3);
+  GPIO(PORT_DEBUG,DIR) |= BIT(PIN_DEBUG_3);  
+  msp_clock_setup(); 
+  INIT_CONSOLE(); 
+  __enable_interrupt(); 
+ // while(1){
+  PRINTF("Starting init\r\n"); 
+//  }
+  //Now send init commands to the apds
+  initializeHardware();
+  delay(4000); 
+  
+  LOG("gesture app booted\r\n");
 
-    msp_clock_setup(); 
-    INIT_CONSOLE(); 
-		LOG("Starting init\r\n"); 
-		
-    //Now send init commands to the apds
-    initializeHardware();
-		delay(4000); 
-		LOG("gesture app booted\r\n");
 }
 
 /**
@@ -245,8 +249,8 @@ void delay(uint32_t cycles)
 void initializeHardware()
 {		LOG("Starting HW setup \r\n"); 
     
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
+    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
+    //GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
 
     #ifdef USE_PHOTORES
         P3SEL0 |= BIT1; 
