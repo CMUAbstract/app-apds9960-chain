@@ -15,13 +15,13 @@
 #include <libmsp/gpio.h>
 #include <libmsp/periph.h>
 #include <libmsp/sleep.h>
-#include <libio/printf.h>
 #include <libmsp/mem.h>
+
 //Other stuff
+#include <libio/console.h> 
 #include <libchain/chain.h>
-#include <libio/log.h>
-#include <libcapybara/reconfig.h> 
 #include <libcapybara/capybara.h> 
+#include <libcapybara/reconfig.h> 
 #include "proximity.h"
 #include "pins.h"
 //Left here for now... 
@@ -48,16 +48,16 @@
 //#define MEAS_PROX 
 //#define USE_PHOTORES
 
-#define CNTPWR 1
+#define CNTPWR 0
 #define LOG_PROX 1
 #define DEFAULT_CFG 							0b1111 
-
+#define PROX_ONLY 1
 //Define the current cap configuration as well as precharge status
 __nv capybara_bankmask_t curbankcfg = DEFAULT_CFG;	
 
 __nv prechg_status_t curprchg;
 
-
+__nv sensor_sw_fail_cnt = 0; 
 // If you link-in wisp-base, then you have to define some symbols.
 uint8_t usrBank[USRBANK_SIZE];
 
@@ -135,10 +135,20 @@ void init()
   GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
   GPIO(PORT_SENSE_SW, DIR) |= BIT(PIN_SENSE_SW);
 
-  capybara_config_banks(0x7);
+  capybara_config_banks(0x3); 
   capybara_wait_for_supply();
-
-
+  
+  GPIO(PORT_DEBUG,OUT) &= ~BIT(PIN_DEBUG_3);
+  GPIO(PORT_DEBUG,DIR) |= BIT(PIN_DEBUG_3);  
+  
+  //Check if we're in a failing state and reset if we are... 
+  /*
+  sensor_sw_fail_cnt++; 
+  if(sensor_sw_fail_cnt > 3){
+    sensor_sw_fail_cnt = 0; 
+    while(1); 
+  }
+  */
   // Turn on sensor power supply
   GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
 
@@ -150,22 +160,20 @@ void init()
   msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
   capybara_wait_for_supply();
 
-//  while(1) {
-//      __bis_SR_register(LPM4_bits);
-//  }
-//
+  msp_watchdog_disable(); 
+  msp_gpio_unlock(); 
+  
   GPIO(PORT_DEBUG,OUT) |= BIT(PIN_DEBUG_3);
   GPIO(PORT_DEBUG,DIR) |= BIT(PIN_DEBUG_3);  
+  
   msp_clock_setup(); 
   INIT_CONSOLE(); 
   __enable_interrupt(); 
- // while(1){
   PRINTF("Starting init\r\n"); 
-//  }
   //Now send init commands to the apds
   initializeHardware();
   delay(4000); 
-  
+  sensor_sw_fail_cnt = 0;   
   LOG("gesture app booted\r\n");
 
 }
@@ -178,6 +186,7 @@ void init()
 						DIR_UP =    011
 						DIR_DOWN =  100
 		These values will get held for a little while, and then revert to 000. 
+    Note: DON'T USE THIS FUNCTION ON CAPYBARA
 */
 
 
@@ -266,8 +275,11 @@ void initializeHardware()
     #ifndef  USE_PHOTORES
     enableProximitySensor(); 
     #endif
-   	enableGesture();  
-		disableGesture(); 
+    //Poke the gesture sensor if we're using it... 
+    #ifndef PROX_ONLY
+        enableGesture();  
+        disableGesture(); 
+    #endif
 		LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
 }
 
@@ -317,6 +329,10 @@ int16_t proxVal = 0;
 		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
 		GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_3); 
 #endif
+    //Hijack the code here if we're only running proximity sensing.  
+    #ifdef PROX_ONLY
+        TRANSITION_TO(task_sample); 
+    #endif
 
 uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
@@ -336,7 +352,6 @@ uint8_t flag = 0;
 		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
 */
 #endif
-
 		
 		reenableGesture();  
 		TRANSITION_TO(task_gestCapture);
@@ -434,6 +449,22 @@ void task_gestCalc()
 		TRANSITION_TO(task_sample);
     
 }
+
+#define _THIS_PORT 2
+__attribute__ ((interrupt(GPIO_VECTOR(_THIS_PORT))))
+void  GPIO_ISR(_THIS_PORT) (void)
+{
+    switch (__even_in_range(INTVEC(_THIS_PORT), INTVEC_RANGE(_THIS_PORT))) {
+#if LIBCAPYBARA_PORT_VBOOST_OK == _THIS_PORT
+        case INTFLAG(LIBCAPYBARA_PORT_VBOOST_OK, LIBCAPYBARA_PIN_VBOOST_OK):
+            capybara_vboost_ok_isr();
+            break;
+#else
+#error Handler in wrong ISR: capybara_vboost_ok_isr
+#endif // LIBCAPYBARA_PORT_VBOOST_OK
+    }
+}
+#undef _THIS_PORT
 
 ENTRY_TASK(task_init)
 INIT_FUNC(init)

@@ -1,11 +1,50 @@
 #include <msp430.h>
 
+#ifdef LIBCAPYBARA_VARTH_ENABLED
 #include <libmcppot/mcp4xxx.h>
-#include <libmsp/gpio.h>
+#endif // LIBCAPYBARA_VARTH_ENABLED
+
 #include <libmsp/periph.h>
 
 #include "reconfig.h"
 
+/* Working config and precharged config */ 
+__nv capybara_cfg_t base_config; 
+__nv capybara_cfg_t prechg_config; 
+
+/* Precharge and Burst status globals */ 
+__nv prechg_status_t prechg_status = 0;  
+__nv burst_status_t burst_status = 0; 
+
+/*Leaving these simple for now... I can't see them ever getting too complicated, but who
+ * knows? */ 
+prechg_status_t get_prechg_status(void){
+    return (prechg_status); 
+}
+
+int set_prechg_status(prechg_status_t in){
+    prechg_status = in; 
+    return 0; 
+}
+
+burst_status_t get_burst_status(void){
+    return (burst_status); 
+}
+
+int set_burst_status(burst_status_t in){
+    burst_status = in; 
+    return 0; 
+}
+
+int set_base_banks(capybara_bankmask_t in){
+    base_config.banks = in;
+    return 0; 
+}
+
+int set_prechg_banks(capybara_bankmask_t in){
+    prechg_config.banks = in;
+    return 0; 
+}
 // Cycles for the latch cap to charge/discharge
 #define SWITCH_TIME_CYCLES 0x1fff // charges to ~2.4v (almost full-scale); discharges to <100mV
 
@@ -105,12 +144,13 @@ int capybara_config_banks(capybara_bankmask_t banks)
 
     CONFIG_BANK(0);
     CONFIG_BANK(1);
-    CONFIG_BANK(2);
-    CONFIG_BANK(3);
+    //CONFIG_BANK(2);
+    //CONFIG_BANK(3);
 
     return 0;
 }
 
+#ifdef LIBCAPYBARA_VARTH_ENABLED
 int capybara_config_threshold(uint16_t wiper)
 {
     uint16_t curr_wiper = pot_get_nv_wiper();
@@ -122,6 +162,7 @@ int capybara_config_threshold(uint16_t wiper)
     }
     return 0;
 }
+#endif // LIBCAPYBARA_VARTH_ENABLED
 
 int capybara_config(capybara_cfg_t cfg)
 {
@@ -130,14 +171,20 @@ int capybara_config(capybara_cfg_t cfg)
     rc = capybara_config_banks(cfg.banks);
     if (rc) return rc;
 
+#ifdef LIBCAPYBARA_VARTH_ENABLED
     rc = capybara_config_threshold(cfg.vth);
     if (rc) return rc;
+#endif // LIBCAPYBARA_VARTH_ENABLED
 
     return 0;
 }
 
 int capybara_config_max()
 {
+#ifdef LIBCAPYBARA_VARTH_ENABLED
     capybara_cfg_t cfg = { ~0, POT_RESOLUTION };
+#else
+    capybara_cfg_t cfg = { ~0 };
+#endif // LIBCAPYBARA_VARTH_ENABLED
     return capybara_config(cfg);
 }

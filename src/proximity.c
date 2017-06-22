@@ -1,12 +1,12 @@
+#include "libmspware/driverlib.h"
 #include <libmsp/mem.h>
 #include <libmsp/periph.h> 
 #include <stdint.h> 
 #include <stdio.h> 
 #include <libwispbase/wisp-base.h> 
 #include <libchain/chain.h>
-#include <libio/log.h>
+#include <libio/console.h>
 #include "proximity.h"
-#include "libmspware/driverlib.h"
 
 static uint8_t abs(int8_t input){
 	uint8_t output; 

@@ -40,6 +40,7 @@
 #define PIN_DEBUG_1							4
 #define PIN_DEBUG_2							5
 #define PIN_DEBUG_3							6
+#define PIN_DEBUG               6
 
 #define PORT_LOAD 3
 #define PIN_LOAD  4
@@ -50,6 +51,8 @@
 #define PORT_SENSE_SW 3
 #define PIN_SENSE_SW  7
 
+#define PORT_RADIO_SW 3
+#define PIN_RADIO_SW  2
 
 #elif defined(BOARD_SPRITE_APP_SOCKET_RHA)
 
