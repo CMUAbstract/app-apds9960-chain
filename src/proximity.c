@@ -222,6 +222,12 @@ void enable_photoresistor(void){
   
 }
 
+void photores_setup(void){
+  P3SEL0 |= BIT0; 
+  P3SEL1 |= BIT1; 
+  PM5CTL0 &= ~LOCKLPM5; 
+}
+
 /*
  *@brief starts reading from the photoresistor ADC comparator pins
  *
@@ -250,7 +256,7 @@ int16_t read_photoresistor(void){
   ADC12CTL0 &= ~ADC12ENC;           // Disable conversions
   ADC12CTL0 &= ~(ADC12ON);  // Shutdown ADC12
   REFCTL0 &= ~REFON;
-  LOG("photoresistor out = %u \r\n", output);  
+  LOG("photoresistor out = %i \r\n", output);  
   //output = 0xFFF - output; 
   //output &= 0xFFF;
   return output; 

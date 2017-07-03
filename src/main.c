@@ -22,6 +22,8 @@
 #include <libchain/chain.h>
 #include <libcapybara/capybara.h> 
 #include <libcapybara/reconfig.h> 
+#include <libcapybara/power.h> 
+
 #include "proximity.h"
 #include "pins.h"
 //Left here for now... 
@@ -91,10 +93,16 @@ struct msg_gest_data{
 	CHAN_FIELD(uint16_t, num_gests); 
 };
 
-TASK(1, task_init)
-TASK(2, task_sample)
-TASK(3, task_gestCapture)
-TASK(4, task_gestCalc)
+
+TASK(1, task_init, DEFAULT, 0)
+TASK(2, task_sample, PREBURST, 0x0)
+TASK(3, task_gestCapture, BURST, 0X3)
+// Really should rope this task into gestCapture... 
+// gestCalc reports the gesture, and while it can be separate, there's no point
+// in stopping the burst run it- i.e., if there isn't enough energy, configure
+// up to 0x3 and spit out the answer, but I'd really rather it happened WITH the
+// burst 
+TASK(4, task_gestCalc, CONFIGD, 0x3)
 
 
 CHANNEL(task_init, task_gestCalc, msg_gest_data); 
@@ -120,60 +128,13 @@ void initializeHardware(void);
 
 void init()
 {
- //Handle usual init stuff 
-  msp_watchdog_disable(); 
-  msp_gpio_unlock(); 
-  __enable_interrupt(); 
-  //Wait until we hit stable power level
-  capybara_wait_for_supply();
-
-  capybara_config_pins();
-
-  GPIO(PORT_CAPYBARA_CFG, OUT) &= ~BIT(PIN_CAPYBARA_CFG);
-  GPIO(PORT_CAPYBARA_CFG, DIR) &= BIT(PIN_CAPYBARA_CFG);
-
-  GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
-  GPIO(PORT_SENSE_SW, DIR) |= BIT(PIN_SENSE_SW);
-
-  capybara_config_banks(0x3); 
-  capybara_wait_for_supply();
-  
-  GPIO(PORT_DEBUG,OUT) &= ~BIT(PIN_DEBUG_3);
-  GPIO(PORT_DEBUG,DIR) |= BIT(PIN_DEBUG_3);  
-  
-  //Check if we're in a failing state and reset if we are... 
-  /*
-  sensor_sw_fail_cnt++; 
-  if(sensor_sw_fail_cnt > 3){
-    sensor_sw_fail_cnt = 0; 
-    while(1); 
-  }
-  */
-  // Turn on sensor power supply
-  GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
-
-  // In ~1ms (but not right now), our supply voltage might drop, due to
-  // charging of sensor caps that may overwhelm the booster briefly. We
-  // need to wait for the drop until we can wait for supply to stabilize
-  // using the VBOOST_OK supervisor, which we do below. This code works
-  // fine if there is no drop in the supply voltage at all.
-  msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
-  capybara_wait_for_supply();
-
-  msp_watchdog_disable(); 
-  msp_gpio_unlock(); 
-  
-  GPIO(PORT_DEBUG,OUT) |= BIT(PIN_DEBUG_3);
-  GPIO(PORT_DEBUG,DIR) |= BIT(PIN_DEBUG_3);  
-  
   msp_clock_setup(); 
   INIT_CONSOLE(); 
   __enable_interrupt(); 
-  PRINTF("Starting init\r\n"); 
+  LOG("Starting init\r\n"); 
   //Now send init commands to the apds
   initializeHardware();
   delay(4000); 
-  sensor_sw_fail_cnt = 0;   
   LOG("gesture app booted\r\n");
 
 }
@@ -297,7 +258,7 @@ void task_init()
 		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc)); 
 		/*Set initial power config here, don't forget a delay!*/ 
     LOG("SANITY CHECK \r\n"); 
-
+    issue_precharge(0xF); 
 		TRANSITION_TO(task_sample);
 }
 
@@ -466,5 +427,5 @@ void  GPIO_ISR(_THIS_PORT) (void)
 }
 #undef _THIS_PORT
 
-ENTRY_TASK(task_init)
+ENTRY_TASK(task_init, DEFAULT, 0)
 INIT_FUNC(init)

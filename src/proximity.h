@@ -300,6 +300,7 @@ uint8_t readProximity(void);
 
 /*Helper functions for reading from photoresistor*/ 
 void enable_photoresistor(void); 
+void photores_setup(void); 
 int16_t read_photoresistor(void); 
 
 int8_t anomalyCheck(uint8_t, uint8_t, uint8_t); 

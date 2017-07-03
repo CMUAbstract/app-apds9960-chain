@@ -5,10 +5,10 @@ OBJECTS = \
 	proximity.o\
 
 DEPS += \
+	libchain\
+	libmcppot\
 	libcapybara\
 	libmspware\
-	libmcppot\
-	libchain\
 	libio \
 	libmsp \
   libwispbase\

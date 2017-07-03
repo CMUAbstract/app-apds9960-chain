@@ -65,5 +65,8 @@ int set_prechg_status(prechg_status_t);
 burst_status_t get_burst_status(void); 
 int set_burst_status(burst_status_t); 
 
+// Set the precharge status info so on next transition or power on, the
+// precharge happens
+int issue_precharge(capybara_bankmask_t cfg);
 
 #endif // LIBCAPYBARA_RECONFIG_H

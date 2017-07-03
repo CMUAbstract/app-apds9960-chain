@@ -15,9 +15,14 @@ __nv capybara_cfg_t prechg_config;
 /* Precharge and Burst status globals */ 
 __nv prechg_status_t prechg_status = 0;  
 __nv burst_status_t burst_status = 0; 
+volatile prechg_status_t v_prechg_status;
+volatile burst_status_t v_burst_status; 
 
-/*Leaving these simple for now... I can't see them ever getting too complicated, but who
- * knows? */ 
+/* Leaving these simple for now... I can't see them ever getting too complicated, but who
+ * knows? TODO turn these into macros so we don't have to pay for a function call every
+ * single time they're accessed... 
+ */
+
 prechg_status_t get_prechg_status(void){
     return (prechg_status); 
 }
@@ -45,6 +50,17 @@ int set_prechg_banks(capybara_bankmask_t in){
     prechg_config.banks = in;
     return 0; 
 }
+
+//  Command from userspace code to issue a precharge, takes bank config as
+//  an argument (TODO: figure out if this is the best place for this function to
+//  live... I suspect it doesn't belong back here given how closely its usage is
+//  tied to libchain)
+int issue_precharge(capybara_bankmask_t cfg){
+    prechg_config.banks = cfg; 
+    prechg_status = 1; 
+    return 0; 
+}
+
 // Cycles for the latch cap to charge/discharge
 #define SWITCH_TIME_CYCLES 0x1fff // charges to ~2.4v (almost full-scale); discharges to <100mV
 
