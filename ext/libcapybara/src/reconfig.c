@@ -60,6 +60,16 @@ int issue_precharge(capybara_bankmask_t cfg){
     prechg_status = 1; 
     return 0; 
 }
+#ifdef LIBCAPYBARA_VARTH_ENABLED
+#define X(a, b, c) {.banks = b, .vth = c},
+#else
+#define X(a, b, c) {.banks = b},
+#endif
+
+capybara_cfg_t pwr_levels[] = {
+    PWR_LEVEL_TABLE
+    #undef X
+};
 
 // Cycles for the latch cap to charge/discharge
 #define SWITCH_TIME_CYCLES 0x1fff // charges to ~2.4v (almost full-scale); discharges to <100mV

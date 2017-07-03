@@ -28,6 +28,7 @@ typedef uint8_t burst_status_t;
 
 extern burst_status_t burst_status; 
 
+
 // Tuple of params that define the pwr system configuration
 typedef struct {
     capybara_bankmask_t banks;
@@ -35,6 +36,28 @@ typedef struct {
     uint16_t vth;
 #endif // LIBCAPYBARA_VARTH_ENABLED
 } capybara_cfg_t;
+
+extern capybara_cfg_t pwr_levels[];
+
+typedef enum {
+    DEFAULT,
+    CONFIGD,
+    BURST,
+    PREBURST,
+} capybara_cfg_spec_t;
+
+#define PWR_LEVEL_TABLE \
+X(LOWP,    0x0, 2.5) \
+X(MEDLOWP, 0x1, 2.5) \
+X(MEDP ,   0x3, 2.5) \
+X(MEDHIGHP,0x7, 2.5) \
+X(HIGHP,   0xF, 2.5) \
+
+#define X(a, b, c) a, 
+typedef enum {
+    PWR_LEVEL_TABLE
+    #undef X
+} capybara_pwr_level_t; 
 
 extern capybara_cfg_t base_config; 
 extern capybara_cfg_t prechg_config; 
