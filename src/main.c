@@ -27,7 +27,7 @@
 #include "proximity.h"
 #include "pins.h"
 //Left here for now... 
-#include <libwispbase/wisp-base.h>
+//#include <libwispbase/wisp-base.h>
 
 #ifdef CONFIG_LIBEDB_PRINTF
 #include <libedb/edb.h>
@@ -59,9 +59,9 @@ __nv capybara_bankmask_t curbankcfg = DEFAULT_CFG;
 
 __nv prechg_status_t curprchg;
 
-__nv sensor_sw_fail_cnt = 0; 
+__nv int sensor_sw_fail_cnt = 0; 
 // If you link-in wisp-base, then you have to define some symbols.
-uint8_t usrBank[USRBANK_SIZE];
+//uint8_t usrBank[USRBANK_SIZE];
 
 struct msg_flag_vals{
 	CHAN_FIELD(uint8_t, flag);
@@ -94,15 +94,15 @@ struct msg_gest_data{
 };
 
 
-TASK(1, task_init, DEFAULT, 0)
-TASK(2, task_sample, PREBURST, 0x0)
-TASK(3, task_gestCapture, BURST, 0X3)
+TASK(1, task_init, DEFAULT)
+TASK(2, task_sample, PREBURST, HIGHP,LOWP)
+TASK(3, task_gestCapture, BURST)
 // Really should rope this task into gestCapture... 
 // gestCalc reports the gesture, and while it can be separate, there's no point
 // in stopping the burst run it- i.e., if there isn't enough energy, configure
 // up to 0x3 and spit out the answer, but I'd really rather it happened WITH the
 // burst 
-TASK(4, task_gestCalc, CONFIGD, 0x3)
+TASK(4, task_gestCalc, CONFIGD, HIGHP)
 
 
 CHANNEL(task_init, task_gestCalc, msg_gest_data); 
@@ -258,7 +258,7 @@ void task_init()
 		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc)); 
 		/*Set initial power config here, don't forget a delay!*/ 
     LOG("SANITY CHECK \r\n"); 
-    issue_precharge(0xF); 
+    //issue_precharge(0xF); 
 		TRANSITION_TO(task_sample);
 }
 
@@ -427,5 +427,5 @@ void  GPIO_ISR(_THIS_PORT) (void)
 }
 #undef _THIS_PORT
 
-ENTRY_TASK(task_init, DEFAULT, 0)
+ENTRY_TASK(task_init)
 INIT_FUNC(init)

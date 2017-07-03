@@ -11,7 +11,7 @@ DEPS += \
 	libmspware\
 	libio \
 	libmsp \
-  libwispbase\
+# libwispbase\
 
 export MAIN_CLOCK_FREQ = 8000000
 

@@ -3,7 +3,7 @@
 #include <libmsp/periph.h> 
 #include <stdint.h> 
 #include <stdio.h> 
-#include <libwispbase/wisp-base.h> 
+//#include <libwispbase/wisp-base.h> 
 #include <libchain/chain.h>
 #include <libio/console.h>
 #include "proximity.h"
