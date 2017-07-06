@@ -211,15 +211,21 @@ void proximity_init(void) {
  *@details Written based on egauge code found at github.com/CMUAbstract/egauge
  */
 void enable_photoresistor(void){
-  //Set pin 3.0 to ADC comparator mode
-  P3SEL0 |= BIT0;
+  // Set pin 3.0 to GPIO OUT,HIGH
+  P3OUT |= BIT0; 
+  P3DIR |= BIT0;
+  
+  // Set pin 3.1 to ADC comparator mode
+  P3SEL0 |= BIT1;
   P3SEL1 |= BIT1;
+  
+  /*
   PM5CTL0 &= ~LOCKLPM5; 
   ADC12CTL0 = ADC12SHT0_2 | ADC12ON;        // Sampling time, S&H=16, ADC12 on
   ADC12CTL1 = ADC12SHP;                     // Use sampling timer
   ADC12CTL2 |= ADC12RES_2;                  // 12-bit conversion results
   ADC12MCTL0 |= ADC12INCH_1;                // A1 ADC input select; Vref=AVCC
-  
+  */ 
 }
 
 void photores_setup(void){

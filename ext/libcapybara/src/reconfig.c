@@ -9,8 +9,9 @@
 #include "reconfig.h"
 
 /* Working config and precharged config */ 
-__nv capybara_cfg_t base_config; 
-__nv capybara_cfg_t prechg_config; 
+__nv capybara_cfg_t base_config = {0} ; 
+
+__nv capybara_cfg_t prechg_config = {0}; 
 
 /* Precharge and Burst status globals */ 
 __nv prechg_status_t prechg_status = 0;  

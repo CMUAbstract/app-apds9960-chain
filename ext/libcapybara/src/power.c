@@ -80,6 +80,21 @@ cb_rc_t capybara_shutdown_on_deep_discharge()
     // Clear int flag and enable int
     COMP_VBANK(INT) &= ~(COMP_VBANK(IFG) | COMP_VBANK(IIFG));
     COMP_VBANK(INT) |= COMP_VBANK(IE);
+    // If manually issuing precharge commands
+    #ifdef LIBCAPYBARA_EXPLICIT_PRECHG
+        // Check if a burst completed 
+        if(burst_status == 2){
+            // Revert to base configuration
+            capybara_config_banks(base_config.banks);
+        }
+        // Check if a burst started, and did not complete
+        //This may not be strictly necessary, but for now, leave it please
+        // :) 
+        else if(burst_status == 1){
+            capybara_config_banks(prechg_config.banks); 
+        }
+        //Otherwise we stay in whatever config we had before
+    #endif
 
     return CB_SUCCESS;
 }

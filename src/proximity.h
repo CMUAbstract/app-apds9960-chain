@@ -267,6 +267,7 @@ int gesture_motion_;
 
 #define NUM_AVGS 2 
 #define NUM_SAMPS  8
+#define USE_PHOTORES
 
 //Set ALERT_THRESH based on the hardware we're using for detection... 
 #ifndef USE_PHOTORES
@@ -276,7 +277,7 @@ int gesture_motion_;
     #define ALERT_THRESH 30
   #endif
 #else
-  #define ALERT_THRESH 2000
+  #define ALERT_THRESH 2500
   //#define ALERT_THRESH 100
 #endif
 
@@ -293,6 +294,7 @@ int gesture_motion_;
 void proximity_init(void); 
 int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps);
 void enableGesture(void); 
+void reenableGesture(void); 
 void disableGesture(void); 
 void resetGestureFields(gesture_data_t *gesture); 
 void enableProximitySensor(void);

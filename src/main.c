@@ -48,20 +48,11 @@
 #define WAIT_TICKS                3
 
 //#define MEAS_PROX 
-//#define USE_PHOTORES
 
 #define CNTPWR 0
 #define LOG_PROX 1
 #define DEFAULT_CFG 							0b1111 
-#define PROX_ONLY 1
-//Define the current cap configuration as well as precharge status
-__nv capybara_bankmask_t curbankcfg = DEFAULT_CFG;	
-
-__nv prechg_status_t curprchg;
-
-__nv int sensor_sw_fail_cnt = 0; 
-// If you link-in wisp-base, then you have to define some symbols.
-//uint8_t usrBank[USRBANK_SIZE];
+//#define PROX_ONLY 0
 
 struct msg_flag_vals{
 	CHAN_FIELD(uint8_t, flag);
@@ -97,11 +88,10 @@ struct msg_gest_data{
 TASK(1, task_init, DEFAULT)
 TASK(2, task_sample, PREBURST, HIGHP,LOWP)
 TASK(3, task_gestCapture, BURST)
-// Really should rope this task into gestCapture... 
-// gestCalc reports the gesture, and while it can be separate, there's no point
-// in stopping the burst run it- i.e., if there isn't enough energy, configure
-// up to 0x3 and spit out the answer, but I'd really rather it happened WITH the
-// burst 
+// Really should rope this task into gestCapture...  gestCalc reports the
+// gesture, and while it can be separate, there's no point in stopping the burst
+// run it- i.e., if there isn't enough energy, configure up to 0x3 and spit out
+// the answer, but I'd really rather it happened WITH the burst 
 TASK(4, task_gestCalc, CONFIGD, HIGHP)
 
 
@@ -117,25 +107,103 @@ SELF_CHANNEL(task_gestCalc, msg_self_gest_data);
 
 volatile unsigned work_x;
 
-static void burn(uint32_t iters)
-{
-    uint32_t iter = iters;
-    while (iter--)
-        work_x++;
-}
-
 void initializeHardware(void);
 
+/** @brief Handler for capybara power-on sequence 
+    TODO add this to libcapybara...
+*/
+void _capybara_handler(void) {
+    msp_watchdog_disable();
+    msp_gpio_unlock();
+    __enable_interrupt();
+    capybara_wait_for_supply();
+    capybara_config_pins();
+    
+    GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
+    GPIO(PORT_SENSE_SW, DIR) |= BIT(PIN_SENSE_SW);
+    
+    GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
+    GPIO(PORT_RADIO_SW, DIR) |= BIT(PIN_RADIO_SW);
+    
+    capybara_shutdown_on_deep_discharge(); 
+    msp_watchdog_disable();
+    msp_gpio_unlock();
+    capybara_config_pins();
+    msp_clock_setup(); 
+    INIT_CONSOLE(); 
+    __enable_interrupt(); 
+    PRINTF("Starting init\r\n"); 
+    P3OUT &= ~BIT6;
+    P3DIR |= BIT6;
+    /*
+    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG); 
+    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG); 
+    
+    msp_clock_setup(); 
+    INIT_CONSOLE(); 
+    __enable_interrupt(); 
+    LIBCHAIN_PRINTF("Testing in main!\r\n"); 
+    */
+    // TODO good grief, set up a switch statement! 
+    // First check precharge state & run precharge if need be
+    if(curctx->task->spec_cfg == PREBURST ){
+        if(!prechg_status){
+            prechg_config.banks = curctx->task->precfg->banks; 
+            capybara_config_banks(prechg_config.banks);
+            prechg_status = 1; 
+            capybara_shutdown(); 
+            capybara_wait_for_supply(); 
+        }
+        // But if we are precharged, config to the task's operating config
+        else{
+          burst_status = 0; 
+          base_config.banks = curctx->task->opcfg->banks; 
+          capybara_config_banks(base_config.banks); 
+        }
+    }
+    // Next check if there is an ongoing burst or if we finished a burst, but
+    // died before writing it down... TODO figure out if this is actually a
+    // concern
+    else if(curctx->task->spec_cfg == BURST){
+        P3OUT |= BIT6;
+        P3DIR |= BIT6;
+        if(burst_status == 2){
+            prechg_status = 0; 
+            burst_status = 0; 
+        }
+        else{
+            P3OUT &= ~BIT6;
+            P3DIR |= BIT6;
+            // We kick into this loop if we failed to complete a burst function
+            // Need to be careful here- a burst task MUST be able to complete in
+            // its allotted energy level, o/w we'll just continue trying in vain
+            capybara_config_banks(prechg_config.banks); 
+            capybara_wait_for_supply(); 
+        } 
+    }
+    else{ 
+        burst_status = 0; 
+        // Check if the task we're executing now has a special power requirement
+        if(curctx->task->spec_cfg == CONFIGD){
+            base_config.banks = curctx->task->opcfg->banks; 
+        }
+        // Finally, just re-up the standard bank config
+        capybara_config_banks(base_config.banks); 
+    }
+    return; 
+}
 void init()
 {
+  _capybara_handler(); 
+
   msp_clock_setup(); 
   INIT_CONSOLE(); 
   __enable_interrupt(); 
-  LOG("Starting init\r\n"); 
+  PRINTF("Starting init\r\n"); 
   //Now send init commands to the apds
   initializeHardware();
-  delay(4000); 
-  LOG("gesture app booted\r\n");
+  //delay(4000); 
+  PRINTF("gesture app booted\r\n");
 
 }
 
@@ -217,37 +285,38 @@ void delay(uint32_t cycles)
 }
 
 void initializeHardware()
-{		LOG("Starting HW setup \r\n"); 
+{		//LOG("Starting HW setup \r\n"); 
     
     //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
     //GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
 
     #ifdef USE_PHOTORES
+    /*  
         P3SEL0 |= BIT1; 
         P3SEL1 |= BIT1; 
         PM5CTL0 &= ~LOCKLPM5; 
+    */
     #endif
-
+    
+    #ifndef  USE_PHOTORES
     i2c_setup();
-		LOG("i2c setup done \r\n"); 
+		//LOG("i2c setup done \r\n"); 
 		/*Iinitialize apds*/
 		proximity_init(); 
 		/*Now enable the proximity sensor*/
-    #ifndef  USE_PHOTORES
     enableProximitySensor(); 
-    #endif
-    //Poke the gesture sensor if we're using it... 
-    #ifndef PROX_ONLY
+        #ifndef PROX_ONLY
         enableGesture();  
         disableGesture(); 
+        #endif
     #endif
-		LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
+		//LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
 }
 
 void task_init()
-{
+{   base_config.banks = 0x1; 
     task_prologue();
-    LOG("init\r\n");
+    //LOG("init\r\n");
 		//Init task_gestCalc fields
 		uint8_t i; 
 		for(i = 0; i < MAX_GESTS; i++){
@@ -257,7 +326,7 @@ void task_init()
 		uint16_t gestInit = 0; 
 		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc)); 
 		/*Set initial power config here, don't forget a delay!*/ 
-    LOG("SANITY CHECK \r\n"); 
+    //LOG("SANITY CHECK \r\n"); 
     //issue_precharge(0xF); 
 		TRANSITION_TO(task_sample);
 }
@@ -265,35 +334,27 @@ void task_init()
 void task_sample()
 {
   task_prologue();
-#ifdef MEAS_PROX
-		LOG("Going up!!\r\n"); 
-    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_3);
-		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
-#endif
+	//LOG("In task sample!!!\r\n"); 
 
 //TODO double check that it's not a problem to use the apds output as an int16_t... 
 int16_t proxVal = 0; 
 #ifdef USE_PHOTORES
-  //enable_photoresistor(); 
+    enable_photoresistor(); 
+while(1){
     proxVal = read_photoresistor(); 
 #else
-	proxVal = readProximity();
-  delay(240000); 
+    proxVal = readProximity();
+    delay(240000); 
 #endif
 
 #if LOG_PROX
-	LOG("proxVal = %u \r\n",proxVal); 
+    PRINTF("proxVal = %i stats:%i %i\r\n",proxVal,burst_status, prechg_status); 
 #endif
 
-#ifdef MEAS_PROX
-	//	LOG("Coming down!!\r\n"); 
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
-		GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_3); 
-#endif
     //Hijack the code here if we're only running proximity sensing.  
-    #ifdef PROX_ONLY
+#ifdef PROX_ONLY
         TRANSITION_TO(task_sample); 
-    #endif
+#endif
 
 uint8_t flag = 0; 
 	if(proxVal > ALERT_THRESH){
@@ -305,27 +366,14 @@ uint8_t flag = 0;
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture)); 
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture)); 
 
-#ifdef MEAS_GEST
-/*
-//Loose start!
-    LOG("Pulling Gesture high! \r\n"); 
-		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
-		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
-*/
-#endif
 		
-		reenableGesture();  
 		TRANSITION_TO(task_gestCapture);
 	}
-	else{
-		//LOG("Disabling gesture!!\r\n"); 	
-		disableGesture(); 
-    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-  	
-		/*GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);*/
-		TRANSITION_TO(task_sample);
+}
+//	else{
+//  TRANSITION_TO(task_sample);
 	
-	}
+//	}
 
 }
 
@@ -333,7 +381,7 @@ void task_gestCapture()
 {
     task_prologue();
 		uint8_t flag = *CHAN_IN1(uint8_t, flag, CH(task_sample, task_gestCapture));  
-		LOG("Running gesture \r\n");
+		PRINTF("Running gesture %i %i\r\n", burst_status, prechg_status);
 		uint8_t stale = *CHAN_IN2(uint8_t, stale, SELF_IN_CH(task_gestCapture),
 															CH(task_sample, task_gestCapture));
 		stale = 1; 
@@ -341,40 +389,38 @@ void task_gestCapture()
 		CHAN_OUT1(uint8_t, stale, stale, SELF_OUT_CH(task_gestCapture)); 
 		uint8_t num_samps = 0; 
 		gesture_data_t gesture_data_; 
-		if(flag > 0){
-		//	LOG("Enabling gesture \r\n"); 
-		//	enableGesture(); 
-			/*break down get gesture into a loop, loop until we hit the minimum number of data
-			points, o/w fail --> stale gesture data needs to be flushed. */
-			resetGestureFields(&gesture_data_); 
-#ifdef MEAS_GEST
-
-//Med start (rising edge)
-    LOG("Pulling Gesture high! \r\n"); 
-		GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG_2); 
-		GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
-
-#endif
-			int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
-			//disableGesture(); 
-				//TODO chan_out the dir as we get it, let it be overwritten, nbd. Then grab it
-				//later if we run out of power. 
-			}
-		//disableGesture(); 
-		LOG("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n", num_samps, MIN_DATA_SETS); 	
-		
+		// Grab gesture
+    if(flag > 0){
+      // Turn on sensor power supply
+      GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
+      msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
+      //Make sure we come out of sleep...  
+      
+      GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG); 
+      GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG);
+      //Make sure VBOOST_OK is high
+      capybara_wait_for_supply();
+      // Do preliminary init stuff 
+      i2c_setup();
+      proximity_init(); 
+      enableGesture(); 
+      for(int num_attempts = 0; num_attempts < 10; num_attempts++){
+          reenableGesture();  
+          
+          resetGestureFields(&gesture_data_); 
+          //PRINTF("gestloop now!\r\n"); 
+          int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
+          PRINTF("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n",
+                    num_samps, MIN_DATA_SETS); 	
+          if(num_samps > MIN_DATA_SETS)
+              break; 
+      }
+		}
+	  	
     if(num_samps > MIN_DATA_SETS){
-#ifdef MEAS_GEST
- 
-    //Med end (falling edge)
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-		LOG("Pulling gesture low!! \r\n"); 
-    GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
-
-#endif
 				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
 																											CH(task_gestCapture,task_gestCalc)); 
-			  LOG("transitioning to final calc!\r\n"); 
+			  //LOG("transitioning to final calc!\r\n"); 
 				TRANSITION_TO(task_gestCalc);
 		}
 		else{
@@ -386,20 +432,13 @@ void task_gestCapture()
 void task_gestCalc()
 {
     task_prologue();
-   	LOG("Computing gesture... \r\n"); 
+   	PRINTF("Computing gesture... \r\n"); 
 		gesture_data_t gest_vals = *CHAN_IN1(gesture_data_t, gesture_data_sets,
 																								CH(task_gestCapture, task_gestCalc)); 
 		uint8_t i,j, num_samps = 4;
 		
 		gest_dir output = decodeGesture();
-#ifdef MEAS_GEST
-/*    //loose end
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-		LOG("Pulling gesture low!! \r\n"); 
-    GPIO(PORT_DEBUG, DIR) &= ~BIT(PIN_DEBUG_2); 
-*/
-#endif
-  LOG("------------------Dir = %u ---------------", output); 	
+    PRINTF("------------------Dir = %u ---------------", output); 	
 		//encode_IO(output); 
 		delay(5000000);
 		delay(5000000);
