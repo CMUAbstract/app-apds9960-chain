@@ -9,7 +9,11 @@
 #include "reconfig.h"
 
 /* Working config and precharged config */ 
+#ifdef LIBCAPYBARA_VARTH_ENABLED
 __nv capybara_cfg_t base_config = {0} ; 
+#else
+__nv capybara_cfg_t base_config = {.banks = 0x1}; 
+#endif 
 
 __nv capybara_cfg_t prechg_config = {0}; 
 
