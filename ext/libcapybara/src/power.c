@@ -29,6 +29,31 @@ void capybara_wait_for_supply()
     GPIO(LIBCAPYBARA_PORT_VBOOST_OK, IFG) &= ~BIT(LIBCAPYBARA_PIN_VBOOST_OK);
 }
 
+void capybara_wait_for_banks()
+{
+    // wait for VBANK_OK: cap voltage is high enough
+    GPIO(LIBCAPYBARA_PORT_VBANK_OK, IES) &= ~BIT(LIBCAPYBARA_PIN_VBANK_OK);
+    GPIO(LIBCAPYBARA_PORT_VBANK_OK, IFG) &= ~BIT(LIBCAPYBARA_PIN_VBANK_OK);
+    GPIO(LIBCAPYBARA_PORT_VBANK_OK, IE) |= BIT(LIBCAPYBARA_PIN_VBANK_OK);
+
+    __disable_interrupt(); // classic lock-check-sleep pattern
+    while ((GPIO(LIBCAPYBARA_PORT_VBANK_OK, IN) & BIT(LIBCAPYBARA_PIN_VBANK_OK)) !=
+                BIT(LIBCAPYBARA_PIN_VBANK_OK)) {
+        __bis_SR_register(LPM4_bits + GIE);
+        __disable_interrupt();
+    }
+    __enable_interrupt();
+
+    GPIO(LIBCAPYBARA_PORT_VBANK_OK, IE) &= ~BIT(LIBCAPYBARA_PIN_VBANK_OK);
+    GPIO(LIBCAPYBARA_PORT_VBANK_OK, IFG) &= ~BIT(LIBCAPYBARA_PIN_VBANK_OK);
+}
+
+int capybara_report_vbank_ok()
+{   int vbank_ok_val = 0;  
+    vbank_ok_val = GPIO(LIBCAPYBARA_PORT_VBANK_OK,IN) & BIT(LIBCAPYBARA_PIN_VBANK_OK); 
+    return vbank_ok_val; 
+}
+
 void capybara_wait_for_vcap()
 {
     // Wait for Vcap to recover

@@ -125,6 +125,10 @@ void _capybara_handler(void) {
     GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
     GPIO(PORT_RADIO_SW, DIR) |= BIT(PIN_RADIO_SW);
     
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
+    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG);
+    
+    
     capybara_shutdown_on_deep_discharge(); 
     msp_watchdog_disable();
     msp_gpio_unlock();
@@ -132,77 +136,21 @@ void _capybara_handler(void) {
     msp_clock_setup(); 
     INIT_CONSOLE(); 
     __enable_interrupt(); 
-    PRINTF("Done handler\r\n"); 
-    //delay(400); 
-    //P3OUT |= BIT6;
-    //P3DIR |= BIT6;
-    /*
-    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG); 
-    GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG); 
-    
-    msp_clock_setup(); 
-    INIT_CONSOLE(); 
-    __enable_interrupt(); 
-    LIBCHAIN_PRINTF("Testing in main!\r\n"); 
-    */
-   /* if(burst_status == 2){
+  /*  
+   if(prechg_status){
+    capybara_config_banks(prechg_config.banks); 
+    //capybara_wait_for_banks();  
+    //msp_sleep(30); 
+    capybara_wait_for_supply(); 
+   }
+  */
+  /* if(burst_status == 2){
         prechg_status = 0; 
         burst_status = 0; 
     }*/
-    // TODO good grief, set up a switch statement! 
-    // First check precharge state & run precharge if need be
+    PRINTF("Done handler\r\n"); 
     capybara_config_banks(base_config.banks); 
     capybara_wait_for_supply();  
-  /*
-  task_cfg_spec_t curpwrcfg = curctx->task->spec_cfg; 
-
-    if(curpwrcfg == PREBURST ){
-        if(!prechg_status){
-            prechg_config.banks = curctx->task->precfg->banks; 
-            capybara_config_banks(prechg_config.banks);
-            prechg_status = 1; 
-            capybara_shutdown(); 
-            capybara_wait_for_supply(); 
-        }
-        // But if we are precharged, config to the task's operating config
-        else{
-          burst_status = 0; 
-          base_config.banks = curctx->task->opcfg->banks; 
-          capybara_config_banks(base_config.banks); 
-        }
-    }
-    // Next check if there is an ongoing burst or if we finished a burst, but
-    // died before writing it down... TODO figure out if this is actually a
-    // concern
-    else if(curpwrcfg == BURST){
-        //P3OUT |= BIT6;
-        //P3DIR |= BIT6;
-        if(burst_status == 2){
-            prechg_status = 0; 
-            burst_status = 0; 
-        }
-        else{
-            //P3OUT &= ~BIT6;
-            //P3DIR |= BIT6;
-            // We kick into this loop if we failed to complete a burst function
-            // Need to be careful here- a burst task MUST be able to complete in
-            // its allotted energy level, o/w we'll just continue trying in vain
-            capybara_config_banks(prechg_config.banks); 
-            capybara_wait_for_supply(); 
-        } 
-    }
-    else{ 
-        burst_status = 0; 
-        // Check if the task we're executing now has a special power requirement
-        if(curpwrcfg == CONFIGD){
-            base_config.banks = curctx->task->opcfg->banks; 
-        }
-        // Finally, just re-up the standard bank config
-        capybara_config_banks(base_config.banks); 
-    }
-    */
-    //P3OUT &= ~BIT6; 
-   // P3DIR |= BIT6;
 }
 
 void capybara_transition()
@@ -210,7 +158,6 @@ void capybara_transition()
     // need to explore exactly how we want BURST tasks to be followed --> should
     // we ever shutdown to reconfigure? Or should we always ride the burst wave
     // until we're out of energy? 
-    // TODO no really, a case statement isn't going to kill you! 
 
     // Check previous burst state and register a finished burst
     if(burst_status){
@@ -244,39 +191,9 @@ void capybara_transition()
             //Another intentional fall through 
 
         default: 
-            //capybara_config_banks(base_config.banks); 
-            //capybara_wait_for_supply();  
             break; 
     }
             
-  /*  
-    // HaNDLe a burst
-    if(curpwrcfg == BURST){
-        prechg_status = 0; 
-        capybara_config_banks(prechg_config.banks); 
-        burst_status = 1; 
-        //capybara_wait_for_supply(); 
-    }
-    else{
-        burst_status = 0; 
-        // Set up a precharge in response to a preburst task if we haven't
-        // precharged already.
-        if( curpwrcfg == PREBURST && !prechg_status){
-            prechg_config.banks = curctx->task->precfg->banks; 
-            capybara_config_banks(prechg_config.banks);
-            // Mark that we finished the config_banks_command
-            prechg_status = 1; 
-            capybara_shutdown(); 
-            capybara_wait_for_supply(); 
-        }
-        // Handle a new config, either from a CONFIGD task a preburst task 
-        if(curpwrcfg == CONFIGD || curpwrcfg == PREBURST){
-            base_config.banks = curctx->task->opcfg->banks;  
-            capybara_config_banks(base_config.banks); 
-            capybara_wait_for_supply();  
-        } 
-    }
-   */
    LOG("Running task %u \r\n",curctx->task->idx); 
     
 }
@@ -561,10 +478,17 @@ void  GPIO_ISR(_THIS_PORT) (void)
 #else
 #error Handler in wrong ISR: capybara_vboost_ok_isr
 #endif // LIBCAPYBARA_PORT_VBOOST_OK
+
+#if LIBCAPYBARA_PORT_VBANK_OK == _THIS_PORT
+        case INTFLAG(LIBCAPYBARA_PORT_VBANK_OK, LIBCAPYBARA_PIN_VBANK_OK):
+            capybara_vbank_ok_isr(); 
+            break; 
+#else 
+#error TODO fix capybara_vbank_ok_isr to be independent
+#endif // LIBCAPYBARA_PORT_VBANK_OK
     }
 }
 #undef _THIS_PORT
-
 INIT_FUNC(init)
 //TRANSITION_FUNC(capybara_transition)
 ENTRY_TASK(task_init)

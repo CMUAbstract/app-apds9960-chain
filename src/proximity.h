@@ -277,8 +277,8 @@ int gesture_motion_;
     #define ALERT_THRESH 30
   #endif
 #else
-  #define ALERT_THRESH 2500
-  //#define ALERT_THRESH 100
+  //#define ALERT_THRESH 2500
+  #define ALERT_THRESH 1850
 #endif
 
 #define MIN_DATA_SETS 1

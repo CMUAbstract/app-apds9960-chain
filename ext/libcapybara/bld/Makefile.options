@@ -20,6 +20,16 @@ else
 $(error Port and pin for VBOOST_OK signal must be defined with LIBCAPYBARA_VBOOST_OK_PIN, e.g. '2.3')
 endif
 
+ifneq ($(LIBCAPYBARA_PIN_VBANK_OK),)
+LOCAL_CFLAGS += \
+  -DLIBCAPYBARA_PORT_VBANK_OK=$(firstword $(subst ., ,$(LIBCAPYBARA_PIN_VBANK_OK))) \
+  -DLIBCAPYBARA_PIN_VBANK_OK=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_VBANK_OK))) 
+
+$(Added -DLIBCAPYBARA_PORT_VBANK_OK=$(firstword $(subst ., ,$(LIBCAPBYARA_PIN_VBANK_OK))) ) 
+else
+$(error Port and pin for VBANK_OK signal must be defined with LIBCAPYBARA_VBANK_OK_PIN, e.g. '2.3')
+endif
+
 ifneq ($(LIBCAPYBARA_VCAP_RECOVERY_TIME),)
 LOCAL_CFLAGS += $(call interval,LIBCAPYBARA_VCAP_RECOVERY_TIME,\
 			$(LIBCAPYBARA_VCAP_RECOVERY_TIME),\

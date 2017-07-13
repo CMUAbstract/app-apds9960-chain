@@ -13,6 +13,12 @@ void capybara_wait_for_supply();
 // Wait for Vcap to recover after droop resulting from booster turning on
 void capybara_wait_for_vcap();
 
+// Wait for Vbank_ok signal to go high again
+void capybara_wait_for_banks(); 
+
+// Query Vbank_ok pin 
+int capybara_report_vbank_ok();
+
 // Function-macro for handling VBOOST_OK interrupt. Cannot be contained within
 // the library since library cannot own the ISR which may need to also handle
 // unrelated pins.  Defined as a macro because can only use __bi[cs]_SR
@@ -29,6 +35,8 @@ void capybara_wait_for_vcap();
 //      #endif
 //
 #define capybara_vboost_ok_isr() __bic_SR_register_on_exit(LPM4_bits)
+
+#define capybara_vbank_ok_isr() __bic_SR_register_on_exit(LPM4_bits)
 
 // Cut power to self by disabling the booster
 void capybara_shutdown();
