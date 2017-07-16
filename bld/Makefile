@@ -9,6 +9,7 @@ DEPS += \
 	libmcppot\
 	libcapybara\
 	libmspware\
+  libmspuartlink \
 	libio \
 	libmsp \
 # libwispbase\
@@ -26,6 +27,11 @@ export LIBMSP_SLEEP_TIMER_CLK = ACLK
 export LIBMSP_SLEEP_TIMER_DIV = 8*1
 
 export LIBMSP_TEMP = 1
+
+export LIBMSPUARTLINK_UART_IDX = 1
+export LIBMSPUARTLINK_PIN_TX = 2.5
+export LIBMSPUARTLINK_BAUDRATE = 115200
+export LIBMSPUARTLINK_CLK = SMCLK
 
 # To use add: libmspsoftuart to DEPS
 #export LIBIO_BACKEND = swuart

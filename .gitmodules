@@ -28,3 +28,6 @@
 [submodule "libmsp2"]
 	path = ext/libmsp
 	url = /afs/ece.cmu.edu/project/abstract/repos/libmsp
+[submodule "ext/libmspuartlink"]
+	path = ext/libmspuartlink
+	url = /afs/ece.cmu.edu/project/abstract/repos/libmspuartlink/

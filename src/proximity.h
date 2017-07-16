@@ -10,7 +10,7 @@
  * relies on the Arduino Wire (I2C) library. to use the library, instantiate an
  * APDS9960 object, call init(), and call the appropriate functions.
  */
- 
+
 #ifndef PROXIMITY_H
 #define PROXIMITY_H
 
@@ -39,7 +39,7 @@
 
 /* Acceptable device IDs */
 #define APDS9960_ID_1           0xAB
-#define APDS9960_ID_2           0x9C 
+#define APDS9960_ID_2           0x9C
 
 /* Misc parameters */
 #define FIFO_PAUSE_TIME         30      // Wait period (ms) between FIFO reads
@@ -256,29 +256,30 @@ typedef struct gesture_data_t_{
 }gesture_data_t;
 
 
-int gesture_ud_delta_; 
-int gesture_lr_delta_; 
-int gesture_ud_count_; 
-int gesture_lr_count_; 
+int gesture_ud_delta_;
+int gesture_lr_delta_;
+int gesture_ud_count_;
+int gesture_lr_count_;
 int gesture_near_count_;
-int gesture_far_count_; 
-int gesture_state_; 
-int gesture_motion_; 
+int gesture_far_count_;
+int gesture_state_;
+int gesture_motion_;
 
-#define NUM_AVGS 2 
+#define NUM_AVGS 2
 #define NUM_SAMPS  8
 #define USE_PHOTORES
 
-//Set ALERT_THRESH based on the hardware we're using for detection... 
+//Set ALERT_THRESH based on the hardware we're using for detection...
 #ifndef USE_PHOTORES
   #ifndef HIGH_POW
     #define ALERT_THRESH 10
-  #else 
+  #else
     #define ALERT_THRESH 30
   #endif
 #else
   //#define ALERT_THRESH 2500
-  #define ALERT_THRESH 1850
+  //#define ALERT_THRESH 2300
+  #define ALERT_THRESH 2200
 #endif
 
 #define MIN_DATA_SETS 1
@@ -286,26 +287,25 @@ int gesture_motion_;
 #define MAX_GESTS 128
 
 
-/*Delay cycles for 8MHz clock to give 250ms delay*/ 
-#define READ_PROX_DELAY_CYCLES 2000000 
+/*Delay cycles for 8MHz clock to give 250ms delay*/
+#define READ_PROX_DELAY_CYCLES 2000000
 #define FIFO_PAUSE 240000
 #define GESTURE_HOLD_TIME  4800000
 /*Helper functions for handling proximity sensor*/
-void proximity_init(void); 
+void proximity_init(void);
 int8_t  getGesture(gesture_data_t *gesture_data_, uint8_t *num_samps);
-void enableGesture(void); 
-void reenableGesture(void); 
-void disableGesture(void); 
-void resetGestureFields(gesture_data_t *gesture); 
+void enableGesture(void);
+void reenableGesture(void);
+void disableGesture(void);
+void resetGestureFields(gesture_data_t *gesture);
 void enableProximitySensor(void);
 uint8_t readProximity(void);
 
-/*Helper functions for reading from photoresistor*/ 
-void enable_photoresistor(void); 
-void photores_setup(void); 
-int16_t read_photoresistor(void); 
-
-int8_t anomalyCheck(uint8_t, uint8_t, uint8_t); 
+/*Helper functions for reading from photoresistor*/
+void enable_photoresistor(void);
+void photores_setup(void);
+int16_t read_photoresistor(void);
+int8_t anomalyCheck(uint8_t, uint8_t, uint8_t);
 void check_mode(void);
 /*A couple of modules to make the msp i2c library feel more like the Arduino wire.h lib
  * for the sake of simiplifying example transfer*/
@@ -314,8 +314,8 @@ void writeSingleByte(uint8_t val);
 uint8_t readDataByte(void);
 int8_t processGestureData(gesture_data_t  gesture_data_);
 int8_t  getGestureLoop(gesture_data_t *gesture_data_, uint8_t *num_samps);
-gest_dir decodeGesture(void); 
+gest_dir decodeGesture(void);
 void restartTransmit(void);
-void delay(uint32_t cycles); 
+void delay(uint32_t cycles);
 
 #endif
