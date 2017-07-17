@@ -53,7 +53,13 @@
 #define SERIES_LEN 8
 //#define MEAS_PROX
 
-#define CNTPWR 0
+//#define CNTPWR
+#define PRECHRG 1
+#define FXDLRG 2
+#define FXDRSP 3
+#define RECFG 4
+
+#define PWRCFG PRECHRG
 #define LOG_PROX 1
 #define DEFAULT_CFG 							0b1111
 //#define PROX_ONLY 0
@@ -99,7 +105,7 @@ struct msg_gest_data{
 	CHAN_FIELD(uint16_t, num_gests);
 };
 
-
+#if PWRCFG == PRECHRG
 TASK(1, task_init, CONFIGD, MEDLOWP)
 TASK(2, task_sample, PREBURST, HIGHP,LOWP)
 TASK(3, task_gestCapture, BURST)
@@ -109,6 +115,19 @@ TASK(3, task_gestCapture, BURST)
 // the answer, but I'd really rather it happened WITH the burst
 TASK(4, task_gestCalc, CONFIGD, HIGHP)
 TASK(5, task_BLE_estab, CONFIGD, MEDLOWP)
+#elif PWRCFG == RECFG
+TASK(1, task_init, CONFIGD, MEDLOWP)
+TASK(2, task_sample, CONFIGD, LOWP)
+TASK(3, task_gestCapture,CONFIGD, HIGHP)
+TASK(4, task_gestCalc, CONFIGD, HIGHP)
+TASK(5, task_BLE_estab, CONFIGD, MEDLOWP)
+#else
+TASK(1, task_init)
+TASK(2, task_sample)
+TASK(3, task_gestCapture)
+TASK(4, task_gestCalc)
+TASK(5, task_BLE_estab)
+#endif
 
 CHANNEL(task_init, task_gestCalc, msg_gest_data);
 
@@ -136,6 +155,7 @@ typedef struct __attribute__((packed)) {
 
 static radio_pkt_t radio_pkt;
 
+__nv unsigned proximity_events;
 volatile unsigned work_x;
 
 void initializeHardware(void);
@@ -147,9 +167,10 @@ void _capybara_handler(void) {
     msp_watchdog_disable();
     msp_gpio_unlock();
     __enable_interrupt();
+#ifndef CNTPWR
     capybara_wait_for_supply();
     capybara_config_pins();
-
+#endif
     GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
     GPIO(PORT_SENSE_SW, DIR) |= BIT(PIN_SENSE_SW);
 
@@ -158,11 +179,12 @@ void _capybara_handler(void) {
 
     GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
     GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG);
-
+#ifndef CNTPWR
     capybara_shutdown_on_deep_discharge();
     msp_watchdog_disable();
     msp_gpio_unlock();
     capybara_config_pins();
+#endif
     msp_clock_setup();
     INIT_CONSOLE();
     __enable_interrupt();
@@ -179,8 +201,16 @@ void _capybara_handler(void) {
         burst_status = 0;
     }*/
     PRINTF("Done handler\r\n");
+#if PWRCFG == FXDLRG
+    base_config.banks = HIGHP; 
+#elif PWRCFG == FXDSML
+    base_config.banks = LOWP; 
+#endif
+
+#ifndef CNTPWR
     capybara_config_banks(base_config.banks);
     capybara_wait_for_supply();
+#endif
 }
 
 void capybara_transition()
@@ -188,7 +218,7 @@ void capybara_transition()
     // need to explore exactly how we want BURST tasks to be followed --> should
     // we ever shutdown to reconfigure? Or should we always ride the burst wave
     // until we're out of energy?
-
+#if (PWRCFG == PRECHRG) || (PWRCFG == RECFG)
     // Check previous burst state and register a finished burst
     if(burst_status){
         burst_status = 2;
@@ -223,73 +253,63 @@ void capybara_transition()
         default:
             break;
     }
-
+#endif
    LOG("Running task %u \r\n",curctx->task->idx);
 
 }
 
 void init()
 {
-  _capybara_handler(); 
+  _capybara_handler();
 
- /* msp_clock_setup(); 
-  INIT_CONSOLE(); 
-  __enable_interrupt(); 
-  */
-  //PRINTF("Starting init\r\n"); 
-  //Now send init commands to the apds
-  //initializeHardware();
-  //delay(4000); 
-  //PRINTF("gesture app booted pchg %u burst %u \r\n", prechg_status, burst_status);
-  //LOG("Running task %u \r\n",curctx->task->idx); 
 }
 
 /**
  * @brief represents the gesture captured
  * @details DIR_NONE =  111
  						DIR_LEFT =  001
-						DIR_RIGHT = 010 
+						DIR_RIGHT = 010
 						DIR_UP =    011
 						DIR_DOWN =  100
-		These values will get held for a little while, and then revert to 000. 
+		These values will get held for a little while, and then revert to 000.
     Note: DON'T USE THIS FUNCTION ON CAPYBARA
 */
 
 
 void encode_IO(gest_dir val){
 	switch(val){
-		case DIR_NONE: 
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
-			break; 
-		case DIR_LEFT: 
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
-			break; 
-		case DIR_RIGHT: 
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
-			break; 
-		case DIR_UP: 
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1); 
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2); 
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
-			break; 
-		case DIR_DOWN: 
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3); 
-			break; 
+		case DIR_NONE:
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1);
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2);
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3);
+			break;
+		case DIR_LEFT:
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1);
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2);
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3);
+			break;
+      case DIR_RIGHT:
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1);
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2);
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3);
+			break;
+		case DIR_UP:
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1);
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2);
+      GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3);
+      break;
+		case DIR_DOWN:
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1);
+			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2);
+			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3);
+			break;
 	}
-	delay(GESTURE_HOLD_TIME); 
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1); 
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2); 
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3); 
+	delay(GESTURE_HOLD_TIME);
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1);
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2);
+		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3);
 
-	return; 
+	return;
 }
 
 void i2c_setup(void) {
@@ -324,26 +344,26 @@ void delay(uint32_t cycles)
 void initializeHardware()
 {		//LOG("Starting HW setup \r\n");
 
-    #ifdef USE_PHOTORES
+#ifdef USE_PHOTORES
     /*
         P3SEL0 |= BIT1;
         P3SEL1 |= BIT1;
         PM5CTL0 &= ~LOCKLPM5;
     */
-    #endif
+#endif
 
-    #ifndef  USE_PHOTORES
+#ifndef  USE_PHOTORES
     i2c_setup();
 		//LOG("i2c setup done \r\n");
 		/*Iinitialize apds*/
 		proximity_init();
 		/*Now enable the proximity sensor*/
     enableProximitySensor();
-        #ifndef PROX_ONLY
+#ifndef PROX_ONLY
         enableGesture();
         disableGesture();
-        #endif
-    #endif
+#endif
+#endif
 		//LOG("APDS TEST v1:  curtsk %u\r\n", curctx->task->idx);
 }
 
@@ -352,6 +372,7 @@ __nv uint16_t base_val;
 void task_init()
 {   //base_config.banks = 0x1;
     capybara_transition();
+    proximity_events = 0;
     burst_status = 0;
     prechg_status = 0;
     prechg_config.banks = 0x0;
@@ -383,21 +404,21 @@ void task_init()
 }
 
 void task_BLE_estab()
-{   capybara_transition(); 
-    task_prologue(); 
-    radio_pkt.cmd = RADIO_CMD_SET_ADV_PAYLOAD; 
+{   capybara_transition();
+    task_prologue();
+    radio_pkt.cmd = RADIO_CMD_SET_ADV_PAYLOAD;
 
-    
+
     uint8_t num_iter = *CHAN_IN2(uint8_t, iter, SELF_IN_CH(task_BLE_estab),
-                                            CH(task_init, task_BLE_estab)); 
-    num_iter++; 
-    CHAN_OUT1(uint8_t, iter, num_iter, SELF_OUT_CH(task_BLE_estab)); 
+                                            CH(task_init, task_BLE_estab));
+    num_iter++;
+    CHAN_OUT1(uint8_t, iter, num_iter, SELF_OUT_CH(task_BLE_estab));
 
     for(int i = 0; i < 8; i++)
-      radio_pkt.series[i] = 0xB; 
-    
-    LOG("Establishing bluetooth connection iter %u \r\n", num_iter); 
-     
+      radio_pkt.series[i] = 0xB;
+
+    LOG("Establishing bluetooth connection iter %u \r\n", num_iter);
+
     GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW);
     for(int j = 0; j < 5; j++){
         uartlink_open_tx();
@@ -406,13 +427,13 @@ void task_BLE_estab()
         msp_sleep(1024);
     }
     GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
-    
-    LOG("Done!\r\n"); 
-    
+
+    LOG("Done!\r\n");
+
     if(num_iter > MAX_BLE_ITER)
-        TRANSITION_TO(task_sample); 
+        TRANSITION_TO(task_sample);
     else
-        TRANSITION_TO(task_BLE_estab); 
+        TRANSITION_TO(task_BLE_estab);
 }
 
 void task_sample()
@@ -443,12 +464,10 @@ int16_t proxVal = 0;
 
 uint8_t flag = 0;
 	if(proxVal > /*base_val + 150*/ ALERT_THRESH){
+    proximity_events++;
     //GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
 		flag = 1;
 		uint8_t stale = 0;
-		/*Add power system reconfiguration code here!!
-			Switch to high power bank, let's assume that we precharged the banks in
-      the past*/
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture));
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture));
 
@@ -468,98 +487,83 @@ else{
 void task_gestCapture()
 {   capybara_transition();
     task_prologue();
-		uint8_t flag = *CHAN_IN1(uint8_t, flag, CH(task_sample, task_gestCapture));  
-		PRINTF("Running gesture %i %i\r\n", burst_status, prechg_status);
+    uint8_t flag = *CHAN_IN1(uint8_t, flag, CH(task_sample, task_gestCapture));
+		PRINTF("Running gesture %i %i\r\n", burst_status, proximity_events);
 		uint8_t stale = *CHAN_IN2(uint8_t, stale, SELF_IN_CH(task_gestCapture),
 															CH(task_sample, task_gestCapture));
-		stale = 1; 
-		/*Mark that we've started a gesture*/ 
-		CHAN_OUT1(uint8_t, stale, stale, SELF_OUT_CH(task_gestCapture)); 
-		uint8_t num_samps = 0; 
-		gesture_data_t gesture_data_; 
+		stale = 1;
+		/*Mark that we've started a gesture*/
+		CHAN_OUT1(uint8_t, stale, stale, SELF_OUT_CH(task_gestCapture));
+		uint8_t num_samps = 0;
+		gesture_data_t gesture_data_;
 		// Grab gesture
     if(flag > 0){
       // Turn on sensor power supply
       GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
       msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
-      //Make sure we come out of sleep...  
-      
-      //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG); 
-      //GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG);
-      //Make sure VBOOST_OK is high
-      capybara_wait_for_supply();
-      // Do preliminary init stuff 
+      // Do preliminary init stuff
       i2c_setup();
-      proximity_init(); 
-      enableGesture(); 
+      proximity_init();
+      enableGesture();
       for(int num_attempts = 0; num_attempts < 10; num_attempts++){
-          reenableGesture();  
-          
-          resetGestureFields(&gesture_data_); 
-          //PRINTF("gestloop now!\r\n"); 
+          reenableGesture();
+
+          resetGestureFields(&gesture_data_);
+          //PRINTF("gestloop now!\r\n");
           int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
           PRINTF("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n",
-                    num_samps, MIN_DATA_SETS); 	
+                    num_samps, MIN_DATA_SETS);
           if(num_samps > MIN_DATA_SETS)
-              break; 
+              break;
       }
 		}
-	  	
+
     if(num_samps > MIN_DATA_SETS){
-				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_, 
-																											CH(task_gestCapture,task_gestCalc)); 
-			  //LOG("transitioning to final calc!\r\n"); 
+				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_,
+																											CH(task_gestCapture,task_gestCalc));
+			  //LOG("transitioning to final calc!\r\n");
 				TRANSITION_TO(task_gestCalc);
 		}
 		else{
-			/*Didn't capture enough data to decide*/ 
-			TRANSITION_TO(task_sample); 
+			/*Didn't capture enough data to decide*/
+			TRANSITION_TO(task_sample);
 		}
 }
 
 void task_gestCalc()
 {   capybara_transition();
     task_prologue();
-   	PRINTF("Computing gesture... \r\n"); 
+   	PRINTF("Computing gesture... \r\n");
 		gesture_data_t gest_vals = *CHAN_IN1(gesture_data_t, gesture_data_sets,
-																								CH(task_gestCapture, task_gestCalc)); 
+																								CH(task_gestCapture, task_gestCalc));
 		uint8_t i,j, len = 8, num_samps = 4;
-	  uint8_t radio_packet[8]; 	
+	  uint8_t radio_packet[8];
 		gest_dir output = decodeGesture();
-    radio_pkt.cmd = RADIO_CMD_SET_ADV_PAYLOAD; 
+    radio_pkt.cmd = RADIO_CMD_SET_ADV_PAYLOAD;
     for(int i = 1; i < len; i++)
-      radio_pkt.series[i] = output; 
-    radio_pkt.series[0] = 0xAA; 
+      radio_pkt.series[i] = output;
+    radio_pkt.series[0] = 0xAA;
     for (; j < len % 16; ++j)
         LOG("%i ", (int)radio_pkt.series[j]);
     LOG("\r\n");
 
-    PRINTF("------------------Dir = %u ---------------", output); 	
+    PRINTF("-----Dir = %u, prox events = %u----", output, proximity_events);
 
     GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW);
-    //Add in a slight delay here to compensate for some mysterious RC delay... 
-    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG); 
-    msp_sleep(400); 
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG); 
+    //Add in a slight delay here to compensate for some mysterious RC delay...
+    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
+    msp_sleep(400);
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
     uartlink_open_tx();
     uartlink_send((uint8_t *)&radio_pkt.cmd, sizeof(radio_pkt.cmd) + len);
     uartlink_close();
-    //delay(100000); 
     // TODO: wait until radio is finished; for now, wait for 0.25sec
-    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG); 
+    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
     msp_sleep(1024);
     GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG); 
-		//encode_IO(output); 
-		//TODO: Consider removing these delays- I think they lead to issues... 
-    //delay(5000000);
-		//delay(5000000);
-	
-		/*calculate the gesture, store the resulting gesture type and inc the number of
-		 * gestures seen by writing to the self channel*/ 	
-		
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
 		TRANSITION_TO(task_sample);
-    
+
 }
 
 #define _THIS_PORT 2
@@ -577,9 +581,9 @@ void  GPIO_ISR(_THIS_PORT) (void)
 
 #if LIBCAPYBARA_PORT_VBANK_OK == _THIS_PORT
         case INTFLAG(LIBCAPYBARA_PORT_VBANK_OK, LIBCAPYBARA_PIN_VBANK_OK):
-            capybara_vbank_ok_isr(); 
-            break; 
-#else 
+            capybara_vbank_ok_isr();
+            break;
+#else
 #error TODO fix capybara_vbank_ok_isr to be independent
 #endif // LIBCAPYBARA_PORT_VBANK_OK
     }
