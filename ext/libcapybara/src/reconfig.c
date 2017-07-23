@@ -87,10 +87,11 @@ capybara_cfg_t pwr_levels[] = {
 #define BANK_PIN_INNER(i) LIBCAPYBARA_BANK_PORT_ ## i ## _PIN
 #define BANK_PIN(i) BANK_PIN_INNER(i)
 
-#define ACTUATE_SWITCH(i) \
-        GPIO(BANK_PORT(i), DIR) |= BIT(BANK_PIN(i)); \
-        __delay_cycles(SWITCH_TIME_CYCLES); \
-        GPIO(BANK_PORT(i), DIR) &= ~BIT(BANK_PIN(i)); \
+#define CONNECT_LATCH(i, op) \
+        GPIO(BANK_PORT(i), DIR) |= BIT(BANK_PIN(i))
+
+#define DISCONNECT_LATCH(i, op) \
+        GPIO(BANK_PORT(i), DIR) &= ~BIT(BANK_PIN(i))
 
 #elif defined(LIBCAPYBARA_SWITCH_CONTROL__TWO_PIN)
 
@@ -100,10 +101,11 @@ capybara_cfg_t pwr_levels[] = {
 #define BANK_PIN_INNER(i, op) LIBCAPYBARA_BANK_PORT_ ## i ## _ ## op ## _PIN
 #define BANK_PIN(i, op) BANK_PIN_INNER(i, op)
 
-#define ACTUATE_SWITCH(i, op) \
-        GPIO(BANK_PORT(i, op), DIR) |= BIT(BANK_PIN(i, op)); \
-        __delay_cycles(SWITCH_TIME_CYCLES); \
-        GPIO(BANK_PORT(i, op), DIR) &= ~BIT(BANK_PIN(i, op)); \
+#define CONNECT_LATCH(i, op) \
+        GPIO(BANK_PORT(i, op), DIR) |= BIT(BANK_PIN(i, op))
+
+#define DISCONNECT_LATCH(i, op) \
+        GPIO(BANK_PORT(i, op), DIR) &= ~BIT(BANK_PIN(i, op))
 
 #endif // LIBCAPYBARA_SWITCH_CONTROL
 
@@ -111,27 +113,19 @@ capybara_cfg_t pwr_levels[] = {
 
 #if defined(LIBCAPYBARA_SWITCH_CONTROL__TWO_PIN)
 
-#define BANK_CONNECT(i) do { \
-        GPIO(BANK_PORT(i, CLOSE), OUT) |= BIT(BANK_PIN(i, CLOSE)); \
-        ACTUATE_SWITCH(i, CLOSE); \
-    } while (0);
+#define BANK_CONNECT(i) \
+    GPIO(BANK_PORT(i, CLOSE), OUT) |= BIT(BANK_PIN(i, CLOSE))
 
-#define BANK_DISCONNECT(i) do { \
-        GPIO(BANK_PORT(i, OPEN), OUT) &= ~BIT(BANK_PIN(i, OPEN)); \
-        ACTUATE_SWITCH(i, OPEN); \
-    } while (0);
+#define BANK_DISCONNECT(i) \
+        GPIO(BANK_PORT(i, OPEN), OUT) |= BIT(BANK_PIN(i, OPEN))
 
 #elif defined(LIBCAPYBARA_SWITCH_CONTROL__ONE_PIN)
 
-#define BANK_CONNECT(i) do { \
-        GPIO(BANK_PORT(i), OUT) &= ~BIT(BANK_PIN(i)); \
-        ACTUATE_SWITCH(i); \
-    } while (0);
+#define BANK_CONNECT(i) \
+        GPIO(BANK_PORT(i), OUT) &= ~BIT(BANK_PIN(i))
 
-#define BANK_DISCONNECT(i) do { \
-        GPIO(BANK_PORT(i), OUT) |= BIT(BANK_PIN(i)); \
-        ACTUATE_SWITCH(i); \
-    } while (0);
+#define BANK_DISCONNECT(i) \
+        GPIO(BANK_PORT(i), OUT) |= BIT(BANK_PIN(i))
 
 #else // LIBCAPYBARA_SWITCH_CONTROL
 #error Invalid value of config option: LIBCAPYBARA_SWITCH_CONTROL
@@ -143,15 +137,11 @@ capybara_cfg_t pwr_levels[] = {
 #error Not implemented: switch design NO, switch control TWO PIN
 #elif defined(LIBCAPYBARA_SWITCH_CONTROL__ONE_PIN)
 
-#define BANK_CONNECT(i) do { \
-        GPIO(BANK_PORT(i), OUT) |= BIT(BANK_PIN(i)); \
-        ACTUATE_SWITCH(i); \
-    } while (0);
+#define BANK_CONNECT(i) \
+        GPIO(BANK_PORT(i), OUT) |= BIT(BANK_PIN(i))
 
-#define BANK_DISCONNECT(i) do { \
-        GPIO(BANK_PORT(i), OUT) &= ~BIT(BANK_PIN(i)); \
-        ACTUATE_SWITCH(i); \
-    } while (0);
+#define BANK_DISCONNECT(i) \
+        GPIO(BANK_PORT(i), OUT) &= ~BIT(BANK_PIN(i))
 
 #endif // LIBCAPYBARA_SWITCH_CONTROL
 
@@ -172,11 +162,29 @@ int capybara_config_banks(capybara_bankmask_t banks)
 
 #define CONFIG_BANK(i) \
     if (banks & (1 << i)) { BANK_CONNECT(i); } else { BANK_DISCONNECT(i); }
+#define DO_CONNECT_LATCH(i) \
+    if (banks & (1 << i)) { CONNECT_LATCH(i, CLOSE); } else { CONNECT_LATCH(i, OPEN); }
+#define DO_DISCONNECT_LATCH(i) \
+    if (banks & (1 << i)) { DISCONNECT_LATCH(i, CLOSE); } else { DISCONNECT_LATCH(i, OPEN); }
 
     CONFIG_BANK(0);
     CONFIG_BANK(1);
-    //CONFIG_BANK(2);
-    //CONFIG_BANK(3);
+    CONFIG_BANK(2);
+    CONFIG_BANK(3);
+
+    // Overlap the delay for all banks
+
+    DO_CONNECT_LATCH(0);
+    DO_CONNECT_LATCH(1);
+    DO_CONNECT_LATCH(2);
+    DO_CONNECT_LATCH(3);
+
+    __delay_cycles(SWITCH_TIME_CYCLES);
+
+    DO_DISCONNECT_LATCH(0);
+    DO_DISCONNECT_LATCH(1);
+    DO_DISCONNECT_LATCH(2);
+    DO_DISCONNECT_LATCH(3);
 
     return 0;
 }

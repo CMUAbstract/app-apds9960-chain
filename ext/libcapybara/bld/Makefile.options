@@ -10,7 +10,7 @@ endif # LIBCAPYBARA_VARTH_ENABLED
 
 ifeq ($(LIBCAPYBARA_PRECHG_HANDLING),EXP)
 LOCAL_CFLAGS += -DLIBCAPYBARA_EXPLICIT_PRECHG
-endif 
+endif
 
 ifneq ($(LIBCAPYBARA_PIN_VBOOST_OK),)
 LOCAL_CFLAGS += \
@@ -25,16 +25,16 @@ LOCAL_CFLAGS += \
 	-DLIBCAPYBARA_PIN_VB1_DIV=$(firstword $(subst ., ,$(LIBCAPYBARA_PIN_VB1_DIV))) \
 	-DLIBCAPYBARA_PIN_VB1_DIV=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_VB1_DIV)))
 else
-$(error Port and pin for VBank1 signal must be defined with LIBCAPYBARA_VB1_DIV_PIN, e.g. '2.3')
+$(error Port and pin for VBank1 signal must be defined with LIBCAPYBARA_PIN_VB1_DIV, e.g. '2.3')
 endif
 
 
 ifneq ($(LIBCAPYBARA_PIN_VBANK_OK),)
 LOCAL_CFLAGS += \
   -DLIBCAPYBARA_PORT_VBANK_OK=$(firstword $(subst ., ,$(LIBCAPYBARA_PIN_VBANK_OK))) \
-  -DLIBCAPYBARA_PIN_VBANK_OK=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_VBANK_OK))) 
+  -DLIBCAPYBARA_PIN_VBANK_OK=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_VBANK_OK)))
 
-$(Added -DLIBCAPYBARA_PORT_VBANK_OK=$(firstword $(subst ., ,$(LIBCAPBYARA_PIN_VBANK_OK))) ) 
+$(Added -DLIBCAPYBARA_PORT_VBANK_OK=$(firstword $(subst ., ,$(LIBCAPBYARA_PIN_VBANK_OK))) )
 else
 $(error Port and pin for VBANK_OK signal must be defined with LIBCAPYBARA_VBANK_OK_PIN, e.g. '2.3')
 endif
@@ -99,9 +99,10 @@ $(error Undefined config variable: LIBCAPYBARA_DEEP_DISCHARGE)
 endif
 
 ifneq ($(LIBCAPYBARA_VBANK_COMP_SETTLE_MS),)
-override CFLAGS := $(CFLAGS) $(call interval,LIBCAPYBARA_VBANK_COMP_SETTLE,$(LIBCAPYBARA_VBANK_COMP_SETTLE_MS),\
-                                   			 $(CLOCK_FREQ_$(LIBMSP_SLEEP_TIMER_CLK)),$(LIBMSP_SLEEP_TIMER_TICKS))
-$(info CFLAGS $(CFLAGS))
+override CFLAGS := $(CFLAGS) \
+	$(call interval,LIBCAPYBARA_VBANK_COMP_SETTLE,$(LIBCAPYBARA_VBANK_COMP_SETTLE_MS),\
+                    $(call calc_int,$(CLOCK_FREQ_$(LIBMSP_SLEEP_TIMER_CLK)) / ($(LIBMSP_SLEEP_TIMER_DIV))),\
+                    $(LIBMSP_SLEEP_TIMER_TICKS))
 else # LIBCAPYBARA_VBANK_COMP_SETTLE_MS
 $(error Unset config variable: LIBCAPYBARA_VBANK_COMP_SETTLE_MS)
 endif # LIBCAPYBARA_VBANK_COMP_SETTLE_MS

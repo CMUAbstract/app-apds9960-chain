@@ -53,16 +53,16 @@
 #define SERIES_LEN 8
 //#define MEAS_PROX
 
-//#define CNTPWR
+#define CNTPWR
 #define PRECHRG 1
 #define FXDLRG 2
 #define FXDRSP 3
 #define RECFG 4
 
-#define PWRCFG RECFG
-#define LOG_PROX 0
-#define DEFAULT_CFG 							0b1111
-//#define PROX_ONLY 0
+#define PWRCFG CNT
+#define LOG_PROX 1
+#define DEFAULT_CFG 							0b111
+#define PROX_ONLY 1
 
 struct msg_num_iter{
   CHAN_FIELD(uint8_t, iter);
