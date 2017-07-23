@@ -55,6 +55,7 @@ export LIBCAPYBARA_VBANK_COMP_SETTLE_MS = 2
 export LIBCAPYBARA_VBANK_COMP_CHAN = E.11 # comparator type and channel for Vbank voltage
 export LIBCAPYBARA_VBANK_COMP_PIN = 2.4
 export LIBCAPYBARA_DEEP_DISCHARGE = 1.6 # V
+export LIBCAPYBARA_VB1_DIV_PIN = 1.1
 
 
 export LIBCAPYBARA_NUM_BANKS = 4

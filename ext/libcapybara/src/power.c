@@ -10,6 +10,8 @@
 #define COMP_VBANK(...)  COMP(LIBCAPYBARA_VBANK_COMP_TYPE, __VA_ARGS__)
 #define COMP2_VBANK(...) COMP2(LIBCAPYBARA_VBANK_COMP_TYPE, __VA_ARGS__)
 
+volatile unsigned burn_flag = 0; 
+
 void capybara_wait_for_supply()
 {
     // wait for BOOST_OK: supply voltage stablized
@@ -132,13 +134,18 @@ void COMP_VBANK_ISR (void)
         case COMP_INTFLAG2(LIBCAPYBARA_VBANK_COMP_TYPE, IIFG):
             break;
         case COMP_INTFLAG2(LIBCAPYBARA_VBANK_COMP_TYPE, IFG):
-            COMP_VBANK(INT) &= ~COMP_VBANK(IE);
-            COMP_VBANK(CTL1) &= ~COMP_VBANK(ON);
+            COMP_VBANK(INT) &= ~COMP_VBANK(IE); COMP_VBANK(CTL1) &= ~COMP_VBANK(ON);
+        // If burn flag set 
+            if(burn_flag){
+                capybara_config_banks(base_config.banks);
+            }
         // If manually issuing precharge commands
         #ifdef LIBCAPYBARA_EXPLICIT_PRECHG
             // Check if a burst completed 
             if(burst_status == 2){
                 // Revert to base configuration
+                GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
+                P3OUT &= ~BIT0;
                 capybara_config_banks(base_config.banks);
             }
             // Check if a burst started, and did not complete

@@ -61,6 +61,7 @@ typedef enum {
 
 extern capybara_cfg_t base_config; 
 extern capybara_cfg_t prechg_config; 
+extern volatile unsigned burn_flag; 
 
 // Configure the power system runtime params
 int capybara_config(capybara_cfg_t cfg);
