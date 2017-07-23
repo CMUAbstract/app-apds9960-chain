@@ -59,8 +59,8 @@
 #define FXDRSP 3
 #define RECFG 4
 
-#define PWRCFG PRECHRG
-#define LOG_PROX 1
+#define PWRCFG RECFG
+#define LOG_PROX 0
 #define DEFAULT_CFG 							0b1111
 //#define PROX_ONLY 0
 
@@ -87,8 +87,8 @@ struct msg_self_stale_flag{
 	SELF_FIELD_INITIALIZER \
 }
 
-struct msg_gestures{
-	CHAN_FIELD(gesture_data_t, gesture_data_sets);
+struct msg_extra_boots{
+	CHAN_FIELD(uint16_t, boot_num);
 };
 
 struct msg_self_gest_data{
@@ -135,7 +135,7 @@ CHANNEL(task_sample, task_gestCapture, msg_flag_vals);
 
 SELF_CHANNEL(task_gestCapture, msg_self_stale_flag);
 
-CHANNEL(task_gestCapture, task_gestCalc, msg_gestures);
+CHANNEL(task_gestCapture, task_gestCalc, msg_extra_boots);
 
 SELF_CHANNEL(task_gestCalc, msg_self_gest_data);
 
@@ -158,6 +158,19 @@ static radio_pkt_t radio_pkt;
 __nv unsigned proximity_events;
 volatile unsigned work_x;
 
+
+void set_burn_flag()
+{   burn_flag = 1;
+}
+
+void burn_to_trigger()
+{   //burn_flag = 0;
+    GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
+    P3OUT |= BIT0;
+    PRINTF("Burn\r\n");
+    while(1){}
+}
+
 void initializeHardware(void);
 
 /** @brief Handler for capybara power-on sequence
@@ -177,6 +190,11 @@ void _capybara_handler(void) {
     GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
     GPIO(PORT_RADIO_SW, DIR) |= BIT(PIN_RADIO_SW);
 
+    P3OUT &= ~BIT5;
+    P3DIR |= BIT5;
+
+    P3OUT &= ~BIT0;
+    P3DIR |= BIT0;
     GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
     GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG);
 #ifndef CNTPWR
@@ -200,14 +218,16 @@ void _capybara_handler(void) {
         prechg_status = 0;
         burst_status = 0;
     }*/
-    PRINTF("Done handler\r\n");
+    //PRINTF("Done handler\r\n");
 #if PWRCFG == FXDLRG
-    base_config.banks = HIGHP; 
+    base_config.banks = HIGHP;
 #elif PWRCFG == FXDSML
-    base_config.banks = LOWP; 
+    base_config.banks = LOWP;
 #endif
 
 #ifndef CNTPWR
+    //capybara_config_banks(0x3);
+    //while(1);
     capybara_config_banks(base_config.banks);
     capybara_wait_for_supply();
 #endif
@@ -219,6 +239,7 @@ void capybara_transition()
     // we ever shutdown to reconfigure? Or should we always ride the burst wave
     // until we're out of energy?
 #if (PWRCFG == PRECHRG) || (PWRCFG == RECFG)
+
     // Check previous burst state and register a finished burst
     if(burst_status){
         burst_status = 2;
@@ -243,8 +264,14 @@ void capybara_transition()
             //intentional fall through
 
         case CONFIGD:
+
             if(base_config.banks != curctx->task->opcfg->banks){
                 base_config.banks = curctx->task->opcfg->banks;
+                // Check if we want to burn the rest of our energy before recharging
+                if(burn_flag){
+                  LOG("In Config, burning to trigger!\r\n");
+                  burn_to_trigger();
+                }
                 capybara_config_banks(base_config.banks);
                 capybara_wait_for_supply();
             }
@@ -254,7 +281,7 @@ void capybara_transition()
             break;
     }
 #endif
-   LOG("Running task %u \r\n",curctx->task->idx);
+   //LOG("Running task %u \r\n",curctx->task->idx);
 
 }
 
@@ -369,6 +396,7 @@ void initializeHardware()
 
 __nv uint16_t base_val;
 
+
 void task_init()
 {   //base_config.banks = 0x1;
     capybara_transition();
@@ -386,7 +414,7 @@ void task_init()
     uint16_t output = 0;
     for(int i = 0; i < 16; i++){
         output += read_photoresistor();
-        LOG("output = %u \r\n", output);
+        //LOG("output = %u \r\n", output);
    }
     base_val = output >> 4;
 #endif
@@ -440,24 +468,26 @@ void task_sample()
 {
   capybara_transition();
   task_prologue();
-
+  int num_samps = 0, avg = 0;
 //TODO double check that it's not a problem to use the apds output as an int16_t...
 int16_t proxVal = 0;
 #ifdef USE_PHOTORES
+    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
     enable_photoresistor();
-//while(1){
     proxVal = read_photoresistor();
+    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
 #else
     proxVal = readProximity();
     delay(240000);
 #endif
 
 #if LOG_PROX
-    PRINTF("proxVal = %i baseval = %i\r\n",proxVal, base_val);
-    //PRINTF("proxVal = %i stats:%i %i\r\n",proxVal,burst_status, prechg_status);
+    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
+    PRINTF("proxVal = %i \r\n",proxVal);
+    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
 #endif
 
-    //Hijack the code here if we're only running proximity sensing.
+    // Hijack the code here if we're only running proximity sensing.
 #ifdef PROX_ONLY
         TRANSITION_TO(task_sample);
 #endif
@@ -465,21 +495,16 @@ int16_t proxVal = 0;
 uint8_t flag = 0;
 	if(proxVal > /*base_val + 150*/ ALERT_THRESH){
     proximity_events++;
-    //GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
+    disable_photoresistor();
 		flag = 1;
+    PRINTF("\r\nproxVal = %i \r\n",proxVal);
 		uint8_t stale = 0;
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture));
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture));
-
-    P3OUT |= BIT6;
-
 		TRANSITION_TO(task_gestCapture);
-	}
-//}
+  }
 else{
-  //P3OUT |= BIT6;
-  TRANSITION_TO(task_sample);
-
+    TRANSITION_TO(task_sample);
 	}
 
 }
@@ -488,7 +513,7 @@ void task_gestCapture()
 {   capybara_transition();
     task_prologue();
     uint8_t flag = *CHAN_IN1(uint8_t, flag, CH(task_sample, task_gestCapture));
-		PRINTF("Running gesture %i %i\r\n", burst_status, proximity_events);
+		//PRINTF("Running gesture %i %i\r\n", burst_status, proximity_events);
 		uint8_t stale = *CHAN_IN2(uint8_t, stale, SELF_IN_CH(task_gestCapture),
 															CH(task_sample, task_gestCapture));
 		stale = 1;
@@ -497,7 +522,7 @@ void task_gestCapture()
 		uint8_t num_samps = 0;
 		gesture_data_t gesture_data_;
 		// Grab gesture
-    if(flag > 0){
+    //if(flag > 0){
       // Turn on sensor power supply
       GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
       msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
@@ -505,27 +530,33 @@ void task_gestCapture()
       i2c_setup();
       proximity_init();
       enableGesture();
+      //TODO play with the max number of attempts
       for(int num_attempts = 0; num_attempts < 10; num_attempts++){
           reenableGesture();
 
           resetGestureFields(&gesture_data_);
           //PRINTF("gestloop now!\r\n");
           int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
-          PRINTF("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n",
-                    num_samps, MIN_DATA_SETS);
-          if(num_samps > MIN_DATA_SETS)
+          //PRINTF("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n",
+          //          num_samps, MIN_DATA_SETS);
+          if(num_samps > MIN_DATA_SETS){
+              //LOG("num attempts =  %u \r\n",num_attempts);
               break;
+          }
       }
-		}
-
+		//}
+    GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
     if(num_samps > MIN_DATA_SETS){
-				CHAN_OUT1(gesture_data_t, gesture_data_sets, gesture_data_,
+				uint16_t cur_boot_num = get_numBoots();
+        CHAN_OUT1(gesture_data_t, boot_num ,cur_boot_num,
 																											CH(task_gestCapture,task_gestCalc));
 			  //LOG("transitioning to final calc!\r\n");
 				TRANSITION_TO(task_gestCalc);
 		}
 		else{
-			/*Didn't capture enough data to decide*/
+			P3OUT |=  BIT5;
+			P3OUT &=  ~BIT5;
+      /*Didn't capture enough data to decide*/
 			TRANSITION_TO(task_sample);
 		}
 }
@@ -533,36 +564,48 @@ void task_gestCapture()
 void task_gestCalc()
 {   capybara_transition();
     task_prologue();
-   	PRINTF("Computing gesture... \r\n");
-		gesture_data_t gest_vals = *CHAN_IN1(gesture_data_t, gesture_data_sets,
-																								CH(task_gestCapture, task_gestCalc));
-		uint8_t i,j, len = 8, num_samps = 4;
+   	//PRINTF("Computing gesture... \r\n");
+		//gesture_data_t gest_vals = *CHAN_IN1(gesture_data_t, gesture_data_sets,
+    //																								CH(task_gestCapture, task_gestCalc));
+		uint16_t gest_age = *CHAN_IN1(uint16_t, boot_num,
+    																								CH(task_gestCapture, task_gestCalc));
+    uint8_t i,j, len = 8, num_samps = 4;
 	  uint8_t radio_packet[8];
 		gest_dir output = decodeGesture();
     radio_pkt.cmd = RADIO_CMD_SET_ADV_PAYLOAD;
     for(int i = 1; i < len; i++)
       radio_pkt.series[i] = output;
     radio_pkt.series[0] = 0xAA;
+    // Add an extra byte to indicate the fail before sending
+		if(gest_age != get_numBoots())
+      radio_pkt.series[2] = 0xEE;
+    /*
     for (; j < len % 16; ++j)
         LOG("%i ", (int)radio_pkt.series[j]);
     LOG("\r\n");
-
+    */
     PRINTF("-----Dir = %u, prox events = %u----", output, proximity_events);
+    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
 
-    GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW);
+    //GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW);
     //Add in a slight delay here to compensate for some mysterious RC delay...
-    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
-    msp_sleep(400);
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
+    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
+    msp_sleep(64);//though 400 is what was here previously
+    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
     uartlink_open_tx();
     uartlink_send((uint8_t *)&radio_pkt.cmd, sizeof(radio_pkt.cmd) + len);
     uartlink_close();
     // TODO: wait until radio is finished; for now, wait for 0.25sec
-    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
-    msp_sleep(1024);
+    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
+    //msp_sleep(1024);
+    msp_sleep(512); //<- Used for tests on 7.20
+    //msp_sleep(256);
     GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
-		TRANSITION_TO(task_sample);
+    //P3OUT |= BIT5;
+    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
+    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
+    set_burn_flag();
+    TRANSITION_TO(task_sample);
 
 }
 

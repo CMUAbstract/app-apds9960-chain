@@ -278,9 +278,9 @@ int gesture_motion_;
   #endif
 #else
   //#define ALERT_THRESH 2500
-  //#define ALERT_THRESH 2300
+  #define ALERT_THRESH 2000
   //#define ALERT_THRESH 2200
-  #define ALERT_THRESH 1700
+  // #define ALERT_THRESH 1700
 #endif
 
 #define MIN_DATA_SETS 1
@@ -300,10 +300,12 @@ void reenableGesture(void);
 void disableGesture(void);
 void resetGestureFields(gesture_data_t *gesture);
 void enableProximitySensor(void);
+void disable_photoresistor(void); 
 uint8_t readProximity(void);
 
 /*Helper functions for reading from photoresistor*/
 void enable_photoresistor(void);
+void disable_photoresistor(void); 
 void photores_setup(void);
 int16_t read_photoresistor(void);
 int8_t anomalyCheck(uint8_t, uint8_t, uint8_t);
