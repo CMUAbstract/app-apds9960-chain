@@ -66,7 +66,7 @@
 #define PWRCFG CNT
 #define LOG_PROX 1
 #define DEFAULT_CFG 							0b111
-#define PROX_ONLY 1
+#define PROX_ONLY 0
 
 struct msg_num_iter{
   CHAN_FIELD(uint8_t, iter);
@@ -174,6 +174,29 @@ void burn_to_trigger()
 
 void initializeHardware(void);
 
+void i2c_setup(void) {
+  /*
+  * Select Port 1
+  * Set Pin 6, 7 to input Secondary Module Function:
+  *   (UCB0SIMO/UCB0SDA, UCB0SOMI/UCB0SCL)
+  */
+    GPIO_setAsPeripheralModuleFunctionInputPin(
+    GPIO_PORT_P1,
+    GPIO_PIN6 + GPIO_PIN7,
+    GPIO_SECONDARY_MODULE_FUNCTION
+  );
+
+  EUSCI_B_I2C_initMasterParam param = {0};
+  param.selectClockSource = EUSCI_B_I2C_CLOCKSOURCE_SMCLK;
+  param.i2cClk = CS_getSMCLK();
+  param.dataRate = EUSCI_B_I2C_SET_DATA_RATE_400KBPS;
+  param.byteCounterThreshold = 0;
+  param.autoSTOPGeneration = EUSCI_B_I2C_NO_AUTO_STOP;
+
+  EUSCI_B_I2C_initMaster(EUSCI_B0_BASE, &param);
+}
+
+
 /** @brief Handler for capybara power-on sequence
     TODO add this to libcapybara...
 */
@@ -229,6 +252,7 @@ void _capybara_handler(void) {
     fxl_out(BIT_PHOTO_SW);
     fxl_out(BIT_RADIO_SW);
     fxl_out(BIT_RADIO_RST);
+    fxl_out(BIT_APDS_SW);
     fxl_pull_up(BIT_CCS_WAKE);
     // SENSE_SW is present but is not electrically correct: do not use.
 #else // BOARD_{MAJOR,MINOR}
@@ -331,29 +355,6 @@ void init()
 */
 
 
-
-void i2c_setup(void) {
-  /*
-  * Select Port 1
-  * Set Pin 6, 7 to input Secondary Module Function:
-  *   (UCB0SIMO/UCB0SDA, UCB0SOMI/UCB0SCL)
-  */
-    GPIO_setAsPeripheralModuleFunctionInputPin(
-    GPIO_PORT_P1,
-    GPIO_PIN6 + GPIO_PIN7,
-    GPIO_SECONDARY_MODULE_FUNCTION
-  );
-
-  EUSCI_B_I2C_initMasterParam param = {0};
-  param.selectClockSource = EUSCI_B_I2C_CLOCKSOURCE_SMCLK;
-  param.i2cClk = CS_getSMCLK();
-  param.dataRate = EUSCI_B_I2C_SET_DATA_RATE_400KBPS;
-  param.byteCounterThreshold = 0;
-  param.autoSTOPGeneration = EUSCI_B_I2C_NO_AUTO_STOP;
-
-  EUSCI_B_I2C_initMaster(EUSCI_B0_BASE, &param);
-}
-
 void delay(uint32_t cycles)
 {
     unsigned i;
@@ -452,16 +453,32 @@ int16_t proxVal = 0;
 #endif
 
     // Hijack the code here if we're only running proximity sensing.
-#ifdef PROX_ONLY
+#if PROX_ONLY
         TRANSITION_TO(task_sample);
 #endif
 
-uint8_t flag = 0;
-	if(proxVal > /*base_val + 150*/ ALERT_THRESH){
+uint8_t flag = 0, cond = 0;
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
+cond = proxVal > ALERT_THRESH;
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
+cond = (proxVal < ALERT_THRESH) && proxVal > 10;
+// Error check for the fxl going wonky on us
+// TODO debug this!!
+if(proxVal == 0){
+    fxl_init();
+    fxl_out(BIT_PHOTO_SW);
+    fxl_out(BIT_RADIO_SW);
+    fxl_out(BIT_RADIO_RST);
+    fxl_out(BIT_APDS_SW);
+    fxl_pull_up(BIT_CCS_WAKE);
+}    
+#endif //BOARD_{MAJOR,MINOR}
+
+  if(cond){
     proximity_events++;
     disable_photoresistor();
 		flag = 1;
-    PRINTF("\r\nproxVal = %i \r\n",proxVal);
+    PRINTF("\r\nExceeded thresh! ProxVal = %i \r\n",proxVal);
 		uint8_t stale = 0;
 		CHAN_OUT1(uint8_t, flag, flag, CH(task_sample, task_gestCapture));
 		CHAN_OUT1(uint8_t, stale, stale, CH(task_sample, task_gestCapture));
@@ -488,10 +505,15 @@ void task_gestCapture()
 		// Grab gesture
     //if(flag > 0){
       // Turn on sensor power supply
-      //GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
+      GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
       msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
-      // Do preliminary init stuff
       i2c_setup();
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
+      // Do preliminary init stuff
+      fxl_set(BIT_APDS_SW);
+      msp_sleep(30);
+#endif
       proximity_init();
       enableGesture();
       //TODO play with the max number of attempts
@@ -515,11 +537,10 @@ void task_gestCapture()
         CHAN_OUT1(gesture_data_t, boot_num ,cur_boot_num,
 																											CH(task_gestCapture,task_gestCalc));
 			  //LOG("transitioning to final calc!\r\n");
-				TRANSITION_TO(task_gestCalc);
+				fxl_clear(BIT_APDS_SW);
+        TRANSITION_TO(task_gestCalc);
 		}
 		else{
-			P3OUT |=  BIT5;
-			P3OUT &=  ~BIT5;
       /*Didn't capture enough data to decide*/
 			TRANSITION_TO(task_sample);
 		}
@@ -549,9 +570,10 @@ void task_gestCalc()
     LOG("\r\n");
     */
     PRINTF("-----Dir = %u, prox events = %u----", output, proximity_events);
+    delay(5000000);
     //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
-
-    //GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW);
+/*
+    GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW);
     //Add in a slight delay here to compensate for some mysterious RC delay...
     //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
     msp_sleep(64);//though 400 is what was here previously
@@ -569,7 +591,8 @@ void task_gestCalc()
     //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
     //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
     set_burn_flag();
-    TRANSITION_TO(task_sample);
+ */
+ TRANSITION_TO(task_sample);
 
 }
 #define _THIS_PORT 2

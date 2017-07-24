@@ -59,9 +59,7 @@
 #elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
 
 #define PORT_PHOTO_SENSE 2
-#define PIN_PHOTO_SENSE 3
-
-// GPIO extender pins
+#define PIN_PHOTO_SENSE 3 // GPIO extender pins
 #define BIT_CCS_WAKE  (1 << 2)
 #define BIT_SENSE_SW  (1 << 3)
 #define BIT_PHOTO_SW  (1 << 4)

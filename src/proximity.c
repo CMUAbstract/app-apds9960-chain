@@ -88,7 +88,7 @@ void proximity_init(void) {
 	writeSingleByte(APDS9960_ID);
 	sensorID = readDataByte();
 
-//	LOG("I2C ID = %x \r\n",proximityID);
+	LOG2("I2C ID = %x \r\n",proximityID);
 //	LOG("I2C ID2 = %x \r\n",sensorID);
 /*
 	EUSCI_B_I2C_disable(EUSCI_B0_BASE);
@@ -201,7 +201,7 @@ void proximity_init(void) {
 	writeDataByte(APDS9960_GCONF4, val);
 
 
-  //LOG("Proximity sensor set up. ID:  %x\r\n", proximityID);
+  LOG2("Proximity sensor set up. ID:  %x\r\n", proximityID);
 	//	enableProximitySensor();
 	restartTransmit();
 	writeSingleByte(APDS9960_ID);
