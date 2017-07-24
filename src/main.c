@@ -19,6 +19,10 @@
 #include <libmsp/uart.h>
 #include <libmspuartlink/uartlink.h>
 
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 1
+#include <libfxl/fxl6408.h>
+#endif// BOARD_{MAJOR,MINOR}
+
 //Other stuff
 #include <libio/console.h>
 #include <libchain/chain.h>
@@ -114,19 +118,16 @@ TASK(3, task_gestCapture, BURST)
 // run it- i.e., if there isn't enough energy, configure up to 0x3 and spit out
 // the answer, but I'd really rather it happened WITH the burst
 TASK(4, task_gestCalc, CONFIGD, HIGHP)
-TASK(5, task_BLE_estab, CONFIGD, MEDLOWP)
 #elif PWRCFG == RECFG
 TASK(1, task_init, CONFIGD, MEDLOWP)
 TASK(2, task_sample, CONFIGD, LOWP)
 TASK(3, task_gestCapture,CONFIGD, HIGHP)
 TASK(4, task_gestCalc, CONFIGD, HIGHP)
-TASK(5, task_BLE_estab, CONFIGD, MEDLOWP)
 #else
 TASK(1, task_init)
 TASK(2, task_sample)
 TASK(3, task_gestCapture)
 TASK(4, task_gestCalc)
-TASK(5, task_BLE_estab)
 #endif
 
 CHANNEL(task_init, task_gestCalc, msg_gest_data);
@@ -180,10 +181,28 @@ void _capybara_handler(void) {
     msp_watchdog_disable();
     msp_gpio_unlock();
     __enable_interrupt();
+// Don't wait if we're on continuous power
 #ifndef CNTPWR
     capybara_wait_for_supply();
-    capybara_config_pins();
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 1
+    capybara_wait_for_vcap();
+#endif // BOARD_{MAJOR,MINOR}
 #endif
+    capybara_config_pins();
+    msp_clock_setup();
+// Set up deep_discharge stop
+#ifndef CNTPWR
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
+    capybara_shutdown_on_deep_discharge();
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
+    capybara_wait_for_supply();
+    if (capybara_shutdown_on_deep_discharge() == CB_ERROR_ALREADY_DEEPLY_DISCHARGED) {
+        capybara_shutdown();
+    }
+#endif //BOARD.{MAJOR,MINOR}
+#endif
+
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
     GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
     GPIO(PORT_SENSE_SW, DIR) |= BIT(PIN_SENSE_SW);
 
@@ -197,15 +216,26 @@ void _capybara_handler(void) {
     P3DIR |= BIT0;
     GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
     GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG);
-#ifndef CNTPWR
-    capybara_shutdown_on_deep_discharge();
-    msp_watchdog_disable();
-    msp_gpio_unlock();
-    capybara_config_pins();
-#endif
-    msp_clock_setup();
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
     INIT_CONSOLE();
-    __enable_interrupt();
+    LOG2("i2c init\r\n");
+    i2c_setup();
+
+    LOG2("fxl init\r\n");
+    fxl_init();
+
+    LOG2("RADIO_SW\r\n");
+
+    fxl_out(BIT_PHOTO_SW);
+    fxl_out(BIT_RADIO_SW);
+    fxl_out(BIT_RADIO_RST);
+    fxl_pull_up(BIT_CCS_WAKE);
+    // SENSE_SW is present but is not electrically correct: do not use.
+#else // BOARD_{MAJOR,MINOR}
+#error Unsupported board: do not know what pins to configure (see BOARD var)
+#endif // BOARD_{MAJOR,MINOR}
+
+    LOG2("Gesture Test\r\n");
   /*
    if(prechg_status){
     capybara_config_banks(prechg_config.banks);
@@ -226,8 +256,6 @@ void _capybara_handler(void) {
 #endif
 
 #ifndef CNTPWR
-    //capybara_config_banks(0x3);
-    //while(1);
     capybara_config_banks(base_config.banks);
     capybara_wait_for_supply();
 #endif
@@ -303,41 +331,6 @@ void init()
 */
 
 
-void encode_IO(gest_dir val){
-	switch(val){
-		case DIR_NONE:
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1);
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2);
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3);
-			break;
-		case DIR_LEFT:
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1);
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2);
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3);
-			break;
-      case DIR_RIGHT:
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1);
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2);
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3);
-			break;
-		case DIR_UP:
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_1);
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_2);
-      GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3);
-      break;
-		case DIR_DOWN:
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1);
-			GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2);
-			GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG_3);
-			break;
-	}
-	delay(GESTURE_HOLD_TIME);
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_1);
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_2);
-		GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG_3);
-
-	return;
-}
 
 void i2c_setup(void) {
   /*
@@ -345,7 +338,7 @@ void i2c_setup(void) {
   * Set Pin 6, 7 to input Secondary Module Function:
   *   (UCB0SIMO/UCB0SDA, UCB0SOMI/UCB0SCL)
   */
-  GPIO_setAsPeripheralModuleFunctionInputPin(
+    GPIO_setAsPeripheralModuleFunctionInputPin(
     GPIO_PORT_P1,
     GPIO_PIN6 + GPIO_PIN7,
     GPIO_SECONDARY_MODULE_FUNCTION
@@ -427,41 +420,12 @@ void task_init()
 		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc));
 		uint8_t iterInit = 0;
     CHAN_OUT1(uint8_t, iter, iterInit, CH(task_init, task_BLE_estab));
-
+    /*
+    fxl_set(BIT_PHOTO_SW);
+    LOG2("Set photo switch high!\r\n");
+    while(1);
+    */
     TRANSITION_TO(task_sample);
-}
-
-void task_BLE_estab()
-{   capybara_transition();
-    task_prologue();
-    radio_pkt.cmd = RADIO_CMD_SET_ADV_PAYLOAD;
-
-
-    uint8_t num_iter = *CHAN_IN2(uint8_t, iter, SELF_IN_CH(task_BLE_estab),
-                                            CH(task_init, task_BLE_estab));
-    num_iter++;
-    CHAN_OUT1(uint8_t, iter, num_iter, SELF_OUT_CH(task_BLE_estab));
-
-    for(int i = 0; i < 8; i++)
-      radio_pkt.series[i] = 0xB;
-
-    LOG("Establishing bluetooth connection iter %u \r\n", num_iter);
-
-    GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW);
-    for(int j = 0; j < 5; j++){
-        uartlink_open_tx();
-        uartlink_send((uint8_t *)&radio_pkt,sizeof(radio_pkt.cmd) + 8);
-        uartlink_close();
-        msp_sleep(1024);
-    }
-    GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
-
-    LOG("Done!\r\n");
-
-    if(num_iter > MAX_BLE_ITER)
-        TRANSITION_TO(task_sample);
-    else
-        TRANSITION_TO(task_BLE_estab);
 }
 
 void task_sample()
@@ -472,10 +436,10 @@ void task_sample()
 //TODO double check that it's not a problem to use the apds output as an int16_t...
 int16_t proxVal = 0;
 #ifdef USE_PHOTORES
-    GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
+    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
     enable_photoresistor();
     proxVal = read_photoresistor();
-    GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
+    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
 #else
     proxVal = readProximity();
     delay(240000);
@@ -524,7 +488,7 @@ void task_gestCapture()
 		// Grab gesture
     //if(flag > 0){
       // Turn on sensor power supply
-      GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
+      //GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
       msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
       // Do preliminary init stuff
       i2c_setup();
@@ -545,7 +509,7 @@ void task_gestCapture()
           }
       }
 		//}
-    GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
+    //GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
     if(num_samps > MIN_DATA_SETS){
 				uint16_t cur_boot_num = get_numBoots();
         CHAN_OUT1(gesture_data_t, boot_num ,cur_boot_num,
@@ -608,12 +572,12 @@ void task_gestCalc()
     TRANSITION_TO(task_sample);
 
 }
-
 #define _THIS_PORT 2
 __attribute__ ((interrupt(GPIO_VECTOR(_THIS_PORT))))
 void  GPIO_ISR(_THIS_PORT) (void)
 {
     switch (__even_in_range(INTVEC(_THIS_PORT), INTVEC_RANGE(_THIS_PORT))) {
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
 #if LIBCAPYBARA_PORT_VBOOST_OK == _THIS_PORT
         case INTFLAG(LIBCAPYBARA_PORT_VBOOST_OK, LIBCAPYBARA_PIN_VBOOST_OK):
             capybara_vboost_ok_isr();
@@ -621,18 +585,30 @@ void  GPIO_ISR(_THIS_PORT) (void)
 #else
 #error Handler in wrong ISR: capybara_vboost_ok_isr
 #endif // LIBCAPYBARA_PORT_VBOOST_OK
-
-#if LIBCAPYBARA_PORT_VBANK_OK == _THIS_PORT
-        case INTFLAG(LIBCAPYBARA_PORT_VBANK_OK, LIBCAPYBARA_PIN_VBANK_OK):
-            capybara_vbank_ok_isr();
-            break;
-#else
-#error TODO fix capybara_vbank_ok_isr to be independent
-#endif // LIBCAPYBARA_PORT_VBANK_OK
+#endif // BOARD_{MAJOR,MINOR}
     }
 }
 #undef _THIS_PORT
+
+#define _THIS_PORT 3
+__attribute__ ((interrupt(GPIO_VECTOR(_THIS_PORT))))
+void  GPIO_ISR(_THIS_PORT) (void)
+{
+    switch (__even_in_range(INTVEC(_THIS_PORT), INTVEC_RANGE(_THIS_PORT))) {
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 1
+#if LIBCAPYBARA_PORT_VBOOST_OK == _THIS_PORT
+        case INTFLAG(LIBCAPYBARA_PORT_VBOOST_OK, LIBCAPYBARA_PIN_VBOOST_OK):
+            capybara_vboost_ok_isr();
+            break;
+#else
+#error Handler in wrong ISR: capybara_vboost_ok_isr
+#endif // LIBCAPYBARA_PORT_VBOOST_OK
+#endif // BOARD_{MAJOR,MINOR}
+    }
+}
+#undef _THIS_PORT
+
+
 INIT_FUNC(init)
-//TRANSITION_FUNC(capybara_transition)
 ENTRY_TASK(task_init)
 

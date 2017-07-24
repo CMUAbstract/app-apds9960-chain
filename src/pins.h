@@ -31,7 +31,7 @@
 #define     PORT_AUX            3
 #define     PIN_AUX_3           4
 #define     PIN_AUX_4           5
-#define			PIN_AUX_5					  6	
+#define			PIN_AUX_5					  6
 
 
 #elif defined(BOARD_CAPYBARA)
@@ -48,11 +48,28 @@
 #define PORT_CAPYBARA_CFG 3
 #define PIN_CAPYBARA_CFG  5
 
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
 #define PORT_SENSE_SW 3
 #define PIN_SENSE_SW  7
 
+
 #define PORT_RADIO_SW 3
 #define PIN_RADIO_SW  2
+
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
+
+#define PORT_PHOTO_SENSE 2
+#define PIN_PHOTO_SENSE 3
+
+// GPIO extender pins
+#define BIT_CCS_WAKE  (1 << 2)
+#define BIT_SENSE_SW  (1 << 3)
+#define BIT_PHOTO_SW  (1 << 4)
+#define BIT_APDS_SW   (1 << 5)
+#define BIT_RADIO_RST (1 << 6)
+#define BIT_RADIO_SW  (1 << 7)
+
+#endif // BOARD.{MAJOR,MINOR}
 
 #elif defined(BOARD_SPRITE_APP_SOCKET_RHA)
 

@@ -12,6 +12,7 @@ DEPS += \
   libmspuartlink \
 	libio \
 	libmsp \
+  libfxl\
 # libwispbase\
 
 export MAIN_CLOCK_FREQ = 8000000
@@ -46,7 +47,12 @@ export LIBMSP_UART_PIN_TX = 2.0
 export LIBMSP_UART_BAUDRATE = 115200
 export LIBMSP_UART_CLOCK = SMCLK
 
+ifeq ($(BOARD_MAJOR).$(BOARD_MINOR),1.0)
 export LIBCAPYBARA_PIN_VBOOST_OK = 2.3
+else ifeq ($(BOARD_MAJOR).$(BOARD_MINOR),1.1)
+export LIBCAPYBARA_PIN_VBOOST_OK = 3.4
+endif # BOARD_MAJOR.BOARD_MINOR
+
 export LIBCAPYBARA_PIN_BOOST_SW = 2.7
 export LIBCAPYBARA_PIN_VBANK_OK = 2.2
 export LIBCAPYBARA_VBANK_DIV = 10:20

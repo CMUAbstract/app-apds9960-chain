@@ -1,6 +1,10 @@
 override BOARD = capybara
-#override MEASURE = MEAS_PROX
 export BOARD
+
+export BOARD_MAJOR = 1
+export BOARD_MINOR = 1
+
+
 #export MEASURE
 
 TOOLS = \
