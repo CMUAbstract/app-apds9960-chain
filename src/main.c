@@ -64,7 +64,8 @@
 #define RECFG 4
 
 #define PWRCFG CNT
-#define LOG_PROX 1
+#define SEND_GEST 1
+#define LOG_PROX 0
 #define DEFAULT_CFG 							0b111
 #define PROX_ONLY 0
 
@@ -91,8 +92,9 @@ struct msg_self_stale_flag{
 	SELF_FIELD_INITIALIZER \
 }
 
-struct msg_extra_boots{
+struct msg_gest_cap_data{
 	CHAN_FIELD(uint16_t, boot_num);
+  CHAN_FIELD(gest_dir, gest_out);
 };
 
 struct msg_self_gest_data{
@@ -110,35 +112,35 @@ struct msg_gest_data{
 };
 
 #if PWRCFG == PRECHRG
-TASK(1, task_init, CONFIGD, MEDLOWP)
-TASK(2, task_sample, PREBURST, HIGHP,LOWP)
+TASK(1, task_init, CONFIGD, LOWP)
+TASK(2, task_sample, PREBURST, MEDHIGHP,LOWP)
 TASK(3, task_gestCapture, BURST)
-// Really should rope this task into gestCapture...  gestCalc reports the
+// Really should rope this task into gestCapture...  gestSend reports the
 // gesture, and while it can be separate, there's no point in stopping the burst
 // run it- i.e., if there isn't enough energy, configure up to 0x3 and spit out
 // the answer, but I'd really rather it happened WITH the burst
-TASK(4, task_gestCalc, CONFIGD, HIGHP)
+TASK(4, task_gestSend, CONFIGD, MEDHIGHP)
 #elif PWRCFG == RECFG
-TASK(1, task_init, CONFIGD, MEDLOWP)
+TASK(1, task_init, CONFIGD, LOWP)
 TASK(2, task_sample, CONFIGD, LOWP)
-TASK(3, task_gestCapture,CONFIGD, HIGHP)
-TASK(4, task_gestCalc, CONFIGD, HIGHP)
+TASK(3, task_gestCapture,CONFIGD, MEDHIGHP)
+TASK(4, task_gestSend, CONFIGD, MEDLOWP)
 #else
 TASK(1, task_init)
 TASK(2, task_sample)
 TASK(3, task_gestCapture)
-TASK(4, task_gestCalc)
+TASK(4, task_gestSend)
 #endif
 
-CHANNEL(task_init, task_gestCalc, msg_gest_data);
+CHANNEL(task_init, task_gestSend, msg_gest_data);
 
 CHANNEL(task_sample, task_gestCapture, msg_flag_vals);
 
 SELF_CHANNEL(task_gestCapture, msg_self_stale_flag);
 
-CHANNEL(task_gestCapture, task_gestCalc, msg_extra_boots);
+CHANNEL(task_gestCapture, task_gestSend, msg_gest_cap_data);
 
-SELF_CHANNEL(task_gestCalc, msg_self_gest_data);
+SELF_CHANNEL(task_gestSend, msg_self_gest_data);
 
 SELF_CHANNEL(task_BLE_estab, msg_self_num_iter);
 
@@ -173,6 +175,37 @@ void burn_to_trigger()
 }
 
 void initializeHardware(void);
+
+static inline void radio_on()
+{
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
+
+#if PORT_RADIO_SW != PORT_RADIO_RST // we assume this below
+#error Unexpected pin config: RAD_SW and RAD_RST not on same port
+#endif // PORT_RADIO_SW != PORT_RADIO_RST
+
+    GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW) | BIT(PIN_RADIO_RST);
+    GPIO(PORT_RADIO_RST, OUT) &= ~BIT(PIN_RADIO_RST);
+
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
+    fxl_set(BIT_RADIO_SW | BIT_RADIO_RST);
+    fxl_clear(BIT_RADIO_RST);
+
+#else // BOARD_{MAJOR,MINOR}
+#error Unsupported board: do not know how to turn off radio (see BOARD var)
+#endif // BOARD_{MAJOR,MINOR}
+}
+
+static inline void radio_off()
+{
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
+    GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
+    fxl_clear(BIT_RADIO_SW);
+#else // BOARD_{MAJOR,MINOR}
+#error Unsupported board: do not know how to turn on radio (see BOARD var)
+#endif // BOARD_{MAJOR,MINOR}
+}
 
 void i2c_setup(void) {
   /*
@@ -241,40 +274,44 @@ void _capybara_handler(void) {
     GPIO(PORT_DEBUG, DIR) |= BIT(PIN_DEBUG);
 #elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
     INIT_CONSOLE();
-    LOG2("i2c init\r\n");
+    //LOG2("i2c init\r\n");
     i2c_setup();
 
-    LOG2("fxl init\r\n");
+    //LOG2("fxl init\r\n");
     fxl_init();
 
-    LOG2("RADIO_SW\r\n");
+    //LOG2("RADIO_SW\r\n");
 
     fxl_out(BIT_PHOTO_SW);
     fxl_out(BIT_RADIO_SW);
     fxl_out(BIT_RADIO_RST);
     fxl_out(BIT_APDS_SW);
     fxl_pull_up(BIT_CCS_WAKE);
+    P3OUT &= ~(BIT5 | BIT6 | BIT7);
+    P3DIR |= (BIT5 | BIT6 | BIT7);
+
     // SENSE_SW is present but is not electrically correct: do not use.
 #else // BOARD_{MAJOR,MINOR}
 #error Unsupported board: do not know what pins to configure (see BOARD var)
 #endif // BOARD_{MAJOR,MINOR}
 
     LOG2("Gesture Test\r\n");
-  /*
+
+#if 0
    if(prechg_status){
     capybara_config_banks(prechg_config.banks);
     //capybara_wait_for_banks();
     //msp_sleep(30);
     capybara_wait_for_supply();
    }
-  */
-  /* if(burst_status == 2){
+#endif
+   if(burst_status == 2){
         prechg_status = 0;
         burst_status = 0;
-    }*/
-    //PRINTF("Done handler\r\n");
+   }
+
 #if PWRCFG == FXDLRG
-    base_config.banks = HIGHP;
+    base_config.banks = MEDHIGHP;
 #elif PWRCFG == FXDSML
     base_config.banks = LOWP;
 #endif
@@ -295,10 +332,14 @@ void capybara_transition()
     // Check previous burst state and register a finished burst
     if(burst_status){
         burst_status = 2;
+        return;
     }
     task_cfg_spec_t curpwrcfg = curctx->task->spec_cfg;
     switch(curpwrcfg){
         case BURST:
+            if(!prechg_status){
+              PRINTF("Error! Running w/out precharge!\r\n");
+            }
             prechg_status = 0;
             capybara_config_banks(prechg_config.banks);
             burst_status = 1;
@@ -318,14 +359,14 @@ void capybara_transition()
         case CONFIGD:
 
             if(base_config.banks != curctx->task->opcfg->banks){
+                // Temp:
+                P3OUT |= BIT7;
                 base_config.banks = curctx->task->opcfg->banks;
-                // Check if we want to burn the rest of our energy before recharging
-                if(burn_flag){
-                  LOG("In Config, burning to trigger!\r\n");
-                  burn_to_trigger();
-                }
                 capybara_config_banks(base_config.banks);
+                // Temp:
+                capybara_shutdown();
                 capybara_wait_for_supply();
+                P3OUT &= ~BIT7;
             }
             //Another intentional fall through
 
@@ -340,7 +381,7 @@ void capybara_transition()
 void init()
 {
   _capybara_handler();
-
+  LOG2("Done handler\r\n");
 }
 
 /**
@@ -402,7 +443,7 @@ void task_init()
 
     task_prologue();
     //LOG("init\r\n");
-		//Init task_gestCalc fields
+		//Init task_gestSend fields
 #ifdef USE_PHOTORES
     enable_photoresistor();
     uint16_t output = 0;
@@ -415,10 +456,10 @@ void task_init()
     uint8_t i;
 		for(i = 0; i < MAX_GESTS; i++){
 			gest_dir  dataInit = DIR_NONE;
-			CHAN_OUT1(gest_dist, gestures[i], dataInit, CH(task_init, task_gestCalc));
+			CHAN_OUT1(gest_dist, gestures[i], dataInit, CH(task_init, task_gestSend));
 		}
 		uint16_t gestInit = 0;
-		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestCalc));
+		CHAN_OUT1(uint16_t, num_gests, gestInit, CH(task_init, task_gestSend));
 		uint8_t iterInit = 0;
     CHAN_OUT1(uint8_t, iter, iterInit, CH(task_init, task_BLE_estab));
     /*
@@ -438,8 +479,10 @@ void task_sample()
 int16_t proxVal = 0;
 #ifdef USE_PHOTORES
     //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
+    P3OUT |= BIT5;
     enable_photoresistor();
     proxVal = read_photoresistor();
+    P3OUT &= ~BIT5;
     //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
 #else
     proxVal = readProximity();
@@ -464,6 +507,7 @@ cond = proxVal > ALERT_THRESH;
 cond = (proxVal < ALERT_THRESH) && proxVal > 10;
 // Error check for the fxl going wonky on us
 // TODO debug this!!
+/*
 if(proxVal == 0){
     fxl_init();
     fxl_out(BIT_PHOTO_SW);
@@ -471,7 +515,8 @@ if(proxVal == 0){
     fxl_out(BIT_RADIO_RST);
     fxl_out(BIT_APDS_SW);
     fxl_pull_up(BIT_CCS_WAKE);
-}    
+}
+*/
 #endif //BOARD_{MAJOR,MINOR}
 
   if(cond){
@@ -502,15 +547,12 @@ void task_gestCapture()
 		CHAN_OUT1(uint8_t, stale, stale, SELF_OUT_CH(task_gestCapture));
 		uint8_t num_samps = 0;
 		gesture_data_t gesture_data_;
-		// Grab gesture
-    //if(flag > 0){
       // Turn on sensor power supply
 #if BOARD_MAJOR == 1 && BOARD_MINOR == 0
       GPIO(PORT_SENSE_SW, OUT) |= BIT(PIN_SENSE_SW);
       msp_sleep(30 /* cycles @ ACLK=VLOCLK=~10kHz ==> ~3ms */);
       i2c_setup();
 #elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
-      // Do preliminary init stuff
       fxl_set(BIT_APDS_SW);
       msp_sleep(30);
 #endif
@@ -521,42 +563,52 @@ void task_gestCapture()
           reenableGesture();
 
           resetGestureFields(&gesture_data_);
-          //PRINTF("gestloop now!\r\n");
           int8_t gestVal = getGestureLoop(&gesture_data_, &num_samps);
-          //PRINTF("OUT OF GESTURE LOOP, num samps = %u, min = %u \r\n",
-          //          num_samps, MIN_DATA_SETS);
           if(num_samps > MIN_DATA_SETS){
-              //LOG("num attempts =  %u \r\n",num_attempts);
               break;
           }
       }
-		//}
-    //GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
+    // Clean up from gesture wreaking havoc on the i2c port...
+    fxl_init();
+    fxl_out(BIT_PHOTO_SW);
+    fxl_out(BIT_RADIO_SW);
+    fxl_out(BIT_RADIO_RST);
+    fxl_out(BIT_APDS_SW);
+    fxl_pull_up(BIT_CCS_WAKE);
+
+
     if(num_samps > MIN_DATA_SETS){
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
+        GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
+        fxl_clear(BIT_APDS_SW);
+#endif
 				uint16_t cur_boot_num = get_numBoots();
-        CHAN_OUT1(gesture_data_t, boot_num ,cur_boot_num,
-																											CH(task_gestCapture,task_gestCalc));
-			  //LOG("transitioning to final calc!\r\n");
-				fxl_clear(BIT_APDS_SW);
-        TRANSITION_TO(task_gestCalc);
+        CHAN_OUT1(uint16_t, boot_num ,cur_boot_num, CH(task_gestCapture,task_gestSend));
+			  gest_dir gest_out = decodeGesture();
+        CHAN_OUT1(gest_dir, gest_out, gest_out, CH(task_gestCapture,task_gestSend));
+#if SEND_GEST
+        TRANSITION_TO(task_gestSend);
+#else
+        TRANSITION_TO(task_sample);
+        PRINTF("-----Dir = %u, prox events = %u----\r\n", gest_out, proximity_events);
+#endif
 		}
 		else{
       /*Didn't capture enough data to decide*/
-			TRANSITION_TO(task_sample);
+			  TRANSITION_TO(task_sample);
 		}
 }
 
-void task_gestCalc()
+void task_gestSend()
 {   capybara_transition();
     task_prologue();
-   	//PRINTF("Computing gesture... \r\n");
-		//gesture_data_t gest_vals = *CHAN_IN1(gesture_data_t, gesture_data_sets,
-    //																								CH(task_gestCapture, task_gestCalc));
-		uint16_t gest_age = *CHAN_IN1(uint16_t, boot_num,
-    																								CH(task_gestCapture, task_gestCalc));
+
+    uint16_t gest_age = *CHAN_IN1(uint16_t, boot_num,
+    																								CH(task_gestCapture, task_gestSend));
+    gest_dir output = *CHAN_IN1(gest_dir, gest_out, CH(task_gestCapture, task_gestSend));
     uint8_t i,j, len = 8, num_samps = 4;
 	  uint8_t radio_packet[8];
-		gest_dir output = decodeGesture();
     radio_pkt.cmd = RADIO_CMD_SET_ADV_PAYLOAD;
     for(int i = 1; i < len; i++)
       radio_pkt.series[i] = output;
@@ -564,35 +616,37 @@ void task_gestCalc()
     // Add an extra byte to indicate the fail before sending
 		if(gest_age != get_numBoots())
       radio_pkt.series[2] = 0xEE;
-    /*
-    for (; j < len % 16; ++j)
-        LOG("%i ", (int)radio_pkt.series[j]);
-    LOG("\r\n");
-    */
-    PRINTF("-----Dir = %u, prox events = %u----", output, proximity_events);
-    delay(5000000);
-    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
-/*
+    PRINTF("****Dir = %u, prox events = %u****\r\n", output, proximity_events);
+#if BOARD_MAJOR == 1 && BOARD_MINOR == 0
     GPIO(PORT_RADIO_SW, OUT) |= BIT(PIN_RADIO_SW);
     //Add in a slight delay here to compensate for some mysterious RC delay...
-    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
     msp_sleep(64);//though 400 is what was here previously
-    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
     uartlink_open_tx();
     uartlink_send((uint8_t *)&radio_pkt.cmd, sizeof(radio_pkt.cmd) + len);
     uartlink_close();
-    // TODO: wait until radio is finished; for now, wait for 0.25sec
-    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
-    //msp_sleep(1024);
     msp_sleep(512); //<- Used for tests on 7.20
-    //msp_sleep(256);
     GPIO(PORT_RADIO_SW, OUT) &= ~BIT(PIN_RADIO_SW);
-    //P3OUT |= BIT5;
-    //GPIO(PORT_DEBUG, OUT) |= BIT(PIN_DEBUG);
-    //GPIO(PORT_DEBUG, OUT) &= ~BIT(PIN_DEBUG);
-    set_burn_flag();
- */
- TRANSITION_TO(task_sample);
+#elif BOARD_MAJOR == 1 && BOARD_MINOR == 1
+    P3OUT |= BIT5;
+    radio_on();
+    //P3OUT |= BIT7;
+    msp_sleep(64); // ~15ms @ ACLK/8
+    //P3OUT &= ~BIT7;
+
+    uartlink_open_tx();
+    uartlink_send((uint8_t *)&radio_pkt.cmd, sizeof(radio_pkt.cmd) + len);
+    uartlink_close();
+
+    // TODO: wait until radio is finished; for now, wait for 0.25sec
+    msp_sleep(1024);
+    P3OUT &= ~BIT5;
+    radio_off();
+    //PRINTF("Sent radio packet!\r\n");
+#else
+#error Unsupported board: unknown radio config
+#endif
+   // msp_sleep(4096);
+    TRANSITION_TO(task_sample);
 
 }
 #define _THIS_PORT 2
