@@ -4,13 +4,13 @@
 #include <libmsp/sleep.h>
 
 #include "power.h"
-#include "reconfig.h" 
+#include "reconfig.h"
 
 // Shorthand
 #define COMP_VBANK(...)  COMP(LIBCAPYBARA_VBANK_COMP_TYPE, __VA_ARGS__)
 #define COMP2_VBANK(...) COMP2(LIBCAPYBARA_VBANK_COMP_TYPE, __VA_ARGS__)
 
-volatile unsigned burn_flag = 0; 
+volatile unsigned burn_flag = 0;
 
 void capybara_wait_for_supply()
 {
@@ -51,9 +51,9 @@ void capybara_wait_for_banks()
 }
 
 int capybara_report_vbank_ok()
-{   int vbank_ok_val = 0;  
-    vbank_ok_val = GPIO(LIBCAPYBARA_PORT_VBANK_OK,IN) & BIT(LIBCAPYBARA_PIN_VBANK_OK); 
-    return vbank_ok_val; 
+{   int vbank_ok_val = 0;
+    vbank_ok_val = GPIO(LIBCAPYBARA_PORT_VBANK_OK,IN) & BIT(LIBCAPYBARA_PIN_VBANK_OK);
+    return vbank_ok_val;
 }
 
 void capybara_wait_for_vcap()
@@ -108,21 +108,6 @@ cb_rc_t capybara_shutdown_on_deep_discharge()
     COMP_VBANK(INT) &= ~(COMP_VBANK(IFG) | COMP_VBANK(IIFG));
     COMP_VBANK(INT) |= COMP_VBANK(IE);
     // If manually issuing precharge commands
-    #ifdef LIBCAPYBARA_EXPLICIT_PRECHG
-        // Check if a burst completed 
-        if(burst_status == 2){
-            // Revert to base configuration
-            capybara_config_banks(base_config.banks);
-        }
-        // Check if a burst started, and did not complete
-        //This may not be strictly necessary, but for now, leave it please
-        // :) 
-        else if(burst_status == 1){
-            capybara_config_banks(prechg_config.banks); 
-        }
-        //Otherwise we stay in whatever config we had before
-    #endif
-
     return CB_SUCCESS;
 }
 
@@ -135,27 +120,6 @@ void COMP_VBANK_ISR (void)
             break;
         case COMP_INTFLAG2(LIBCAPYBARA_VBANK_COMP_TYPE, IFG):
             COMP_VBANK(INT) &= ~COMP_VBANK(IE); COMP_VBANK(CTL1) &= ~COMP_VBANK(ON);
-        // If burn flag set 
-            if(burn_flag){
-                capybara_config_banks(base_config.banks);
-            }
-        // If manually issuing precharge commands
-        #ifdef LIBCAPYBARA_EXPLICIT_PRECHG
-            // Check if a burst completed 
-            if(burst_status == 2){
-                // Revert to base configuration
-                GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
-                P3OUT &= ~BIT0;
-                capybara_config_banks(base_config.banks);
-            }
-            // Check if a burst started, and did not complete
-            //This may not be strictly necessary, but for now, leave it please
-            // :) 
-            else if(burst_status == 1){
-                capybara_config_banks(prechg_config.banks); 
-            }
-            //Otherwise we stay in whatever config we had before
-        #endif
             capybara_shutdown();
             break;
     }

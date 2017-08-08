@@ -2,7 +2,7 @@
 #define LIBCAPYBARA_RECONFIG_H
 
 #include <stdint.h>
-#include <libmsp/mem.h> 
+#include <libmsp/mem.h>
 
 #ifdef LIBCAPYBARA_VARTH_ENABLED
 #include <libmcppot/mcp4xxx.h>
@@ -19,14 +19,14 @@
 typedef uint16_t capybara_bankmask_t;
 
 // Bits reporting status of a precharge operation
-typedef uint8_t prechg_status_t; 
+typedef uint8_t prechg_status_t;
 
-extern prechg_status_t prechg_status;  
+extern prechg_status_t prechg_status;
 
-// Bits reporting status of a burst operation 
-typedef uint8_t burst_status_t; 
+// Bits reporting status of a burst operation
+typedef uint8_t burst_status_t;
 
-extern burst_status_t burst_status; 
+extern burst_status_t burst_status;
 
 
 // Tuple of params that define the pwr system configuration
@@ -52,16 +52,18 @@ X(MEDLOWP, 0x1, 2.5) \
 X(MEDP ,   0x3, 2.5) \
 X(MEDHIGHP,0x7, 2.5) \
 X(HIGHP,   0xF, 2.5) \
+X(MEDP2,   0x5, 2.5) \
 
-#define X(a, b, c) a, 
+
+#define X(a, b, c) a,
 typedef enum {
     PWR_LEVEL_TABLE
     #undef X
-} capybara_pwr_level_t; 
+} capybara_pwr_level_t;
 
-extern capybara_cfg_t base_config; 
-extern capybara_cfg_t prechg_config; 
-extern volatile unsigned burn_flag; 
+extern capybara_cfg_t base_config;
+extern capybara_cfg_t prechg_config;
+extern volatile unsigned burn_flag;
 
 // Configure the power system runtime params
 int capybara_config(capybara_cfg_t cfg);

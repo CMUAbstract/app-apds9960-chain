@@ -62,6 +62,7 @@
 #define FXDLRG 2
 #define FXDRSP 3
 #define RECFG 4
+#define TEST 5
 
 #define PWRCFG CNT
 #define SEND_GEST 1
@@ -113,23 +114,31 @@ struct msg_gest_data{
 
 #if PWRCFG == PRECHRG
 TASK(1, task_init, CONFIGD, LOWP)
-TASK(2, task_sample, PREBURST, MEDHIGHP,LOWP)
+// Use MEDP2 for SE variant and MEDHIGHP for TE variant
+//TASK(2, task_sample, PREBURST, MEDHIGHP,LOWP)
+TASK(2, task_sample, PREBURST, MEDP2,LOWP)
 TASK(3, task_gestCapture, BURST)
 // Really should rope this task into gestCapture...  gestSend reports the
 // gesture, and while it can be separate, there's no point in stopping the burst
 // run it- i.e., if there isn't enough energy, configure up to 0x3 and spit out
 // the answer, but I'd really rather it happened WITH the burst
-TASK(4, task_gestSend, CONFIGD, MEDHIGHP)
+TASK(4, task_gestSend, CONFIGD, MEDLOWP)
 #elif PWRCFG == RECFG
 TASK(1, task_init, CONFIGD, LOWP)
 TASK(2, task_sample, CONFIGD, LOWP)
 TASK(3, task_gestCapture,CONFIGD, MEDHIGHP)
 TASK(4, task_gestSend, CONFIGD, MEDLOWP)
+#elif 0
+TASK(1, task_init,CONFIGD,MEDHIGHP)
+TASK(2, task_sample,CONFIGD,MEDHIGHP)
+TASK(3, task_gestCapture,CONFIGD,MEDHIGHP)
+TASK(4, task_gestSend,CONFIGD,MEDHIGHP)
 #else
 TASK(1, task_init)
 TASK(2, task_sample)
 TASK(3, task_gestCapture)
 TASK(4, task_gestSend)
+
 #endif
 
 CHANNEL(task_init, task_gestSend, msg_gest_data);
@@ -256,7 +265,7 @@ void _capybara_handler(void) {
         capybara_shutdown();
     }
 #endif //BOARD.{MAJOR,MINOR}
-#endif
+#endif //CNTPWR
 
 #if BOARD_MAJOR == 1 && BOARD_MINOR == 0
     GPIO(PORT_SENSE_SW, OUT) &= ~BIT(PIN_SENSE_SW);
@@ -295,23 +304,23 @@ void _capybara_handler(void) {
 #error Unsupported board: do not know what pins to configure (see BOARD var)
 #endif // BOARD_{MAJOR,MINOR}
 
-    LOG2("Gesture Test\r\n");
 
-#if 0
+#if PWRCFG == PRECHRG || PWRCFG == TEST
    if(prechg_status){
     capybara_config_banks(prechg_config.banks);
     //capybara_wait_for_banks();
-    //msp_sleep(30);
+    msp_sleep(30);
     capybara_wait_for_supply();
    }
-#endif
    if(burst_status == 2){
         prechg_status = 0;
         burst_status = 0;
    }
+#endif //PWRCFG
 
 #if PWRCFG == FXDLRG
-    base_config.banks = MEDHIGHP;
+    //Use MEDP2 for SE version and MEDHIGHP for TE version
+    base_config.banks = MEDP2;
 #elif PWRCFG == FXDSML
     base_config.banks = LOWP;
 #endif
@@ -320,6 +329,7 @@ void _capybara_handler(void) {
     capybara_config_banks(base_config.banks);
     capybara_wait_for_supply();
 #endif
+    LOG2("Gesture Test\r\n");
 }
 
 void capybara_transition()
@@ -327,7 +337,7 @@ void capybara_transition()
     // need to explore exactly how we want BURST tasks to be followed --> should
     // we ever shutdown to reconfigure? Or should we always ride the burst wave
     // until we're out of energy?
-#if (PWRCFG == PRECHRG) || (PWRCFG == RECFG)
+#if (PWRCFG == PRECHRG) || (PWRCFG == RECFG) || (PWRCFG == TEST)
 
     // Check previous burst state and register a finished burst
     if(burst_status){
@@ -383,18 +393,6 @@ void init()
   _capybara_handler();
   LOG2("Done handler\r\n");
 }
-
-/**
- * @brief represents the gesture captured
- * @details DIR_NONE =  111
- 						DIR_LEFT =  001
-						DIR_RIGHT = 010
-						DIR_UP =    011
-						DIR_DOWN =  100
-		These values will get held for a little while, and then revert to 000.
-    Note: DON'T USE THIS FUNCTION ON CAPYBARA
-*/
-
 
 void delay(uint32_t cycles)
 {

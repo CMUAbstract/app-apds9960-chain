@@ -1,0 +1,40 @@
+make TOOLCHAIN=gcc -e -C bld/gcc depclean
+make[1]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/bld/gcc'
+rm -f main.o proximity.o  main.d proximity.d gesture.out
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libchain/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libchain/bld/gcc'
+rm -f chain.o  chain.d libchain.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libchain/bld/gcc'
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libmsp/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmsp/bld/gcc'
+rm -f watchdog.o mspware/pmm.o mem.o clock.o  watchdog.d mspware/pmm.d mem.d clock.d libmsp.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmsp/bld/gcc'
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libcapybara/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libcapybara/bld/gcc'
+rm -f reconfig.o reconfig.d libcapybara.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libcapybara/bld/gcc'
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libmspware/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmspware/bld/gcc'
+rm -f adc12_b.o aes256.o comp_e.o crc32.o crc.o cs.o dma.o esi.o eusci_a_spi.o eusci_a_uart.o eusci_b_i2c.o eusci_b_spi.o framctl.o gpio.o lcd_c.o mpu.o mpy32.o pmm.o ram.o ref_a.o rtc_b.o rtc_c.o sfr.o sysctl.o timer_a.o timer_b.o tlv.o wdt_a.o  adc12_b.d aes256.d comp_e.d crc32.d crc.d cs.d dma.d esi.d eusci_a_spi.d eusci_a_uart.d eusci_b_i2c.d eusci_b_spi.d framctl.d gpio.d lcd_c.d mpu.d mpy32.d pmm.d ram.d ref_a.d rtc_b.d rtc_c.d sfr.d sysctl.d timer_a.d timer_b.d tlv.d wdt_a.d libmspware.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmspware/bld/gcc'
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libmcppot/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmcppot/bld/gcc'
+rm -f mcp4xxx.o  mcp4xxx.d libmcppot.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmcppot/bld/gcc'
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libio/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libio/bld/gcc'
+rm -f empty.o  empty.d libio.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libio/bld/gcc'
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libmspprintf/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmspprintf/bld/gcc'
+rm -f printf.o  printf.d libmspprintf.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmspprintf/bld/gcc'
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libmspconsole/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmspconsole/bld/gcc'
+rm -f io.o  io.d libmspconsole.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libmspconsole/bld/gcc'
+make -C /home/emily/chain_apps/app-apds9960-chain/ext/libwispbase/bld/gcc clean
+make[2]: Entering directory '/home/emily/chain_apps/app-apds9960-chain/ext/libwispbase/bld/gcc'
+rm -f wired/uart.o rand/rand.o nvm/fram.o internals/wisp-init.o Timing/timer.o Math/crc16_LUT.o RFID/interface.o  wired/spi.o Sensors/accel.o wired/uart.d rand/rand.d nvm/fram.d internals/wisp-init.d Timing/timer.d Math/crc16_LUT.d RFID/interface.d wired/spi.d Sensors/accel.d libwispbase.a
+make[2]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/ext/libwispbase/bld/gcc'
+make[1]: Leaving directory '/home/emily/chain_apps/app-apds9960-chain/bld/gcc'
