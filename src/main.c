@@ -29,6 +29,7 @@
 #include <libcapybara/capybara.h>
 #include <libcapybara/reconfig.h>
 #include <libcapybara/power.h>
+//#include <libhmc/magnetometer.h>
 
 #include "proximity.h"
 #include "pins.h"
@@ -554,7 +555,21 @@ void task_gestCapture()
       fxl_set(BIT_APDS_SW);
       msp_sleep(30);
 #endif
+      //magnetometer_init();
       proximity_init();
+      //enableProximitySensor();
+      //enableGesture();
+      //disableGesture();
+      //delay(240000);
+      //while(1){
+      ////magnet_t temp;
+      ////magnetometer_read(&temp);
+      //uint8_t test = readProximity();
+      //LOG("My proxVal = %u\r\n",test);
+      ////                                    ,temp.x,temp.y,temp.z);
+      //delay(240000);
+      //}
+      //msp_sleep(5000);
       enableGesture();
       //TODO play with the max number of attempts
       for(int num_attempts = 0; num_attempts < 10; num_attempts++){

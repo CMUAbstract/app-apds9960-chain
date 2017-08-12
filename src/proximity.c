@@ -323,6 +323,7 @@ void enableProximitySensor(void){
 	val = readDataByte();
   val |= (1 << POWER);
 #ifdef NO_PERIPHS
+  LOG("Turning off periphs!");
   /*Disable the power if we're turning off the peripherals*/
   val &= ~(1 << POWER);
 #endif
@@ -331,13 +332,13 @@ void enableProximitySensor(void){
 	/*Set proximity mode*/
 	restartTransmit();
 //Only enable proximity detection if we're NOT using the photoresistor
-#ifndef USE_PHOTORES
+//#ifndef USE_PHOTORES
   writeSingleByte(APDS9960_ENABLE);
 	val = readDataByte();
 	val |= (1 << PROXIMITY);
 	restartTransmit();
 	writeDataByte(APDS9960_ENABLE,val);
-#endif
+//#endif
 	return;
 }
 

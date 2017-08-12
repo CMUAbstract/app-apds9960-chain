@@ -34,3 +34,9 @@
 [submodule "ext/libfxl"]
 	path = ext/libfxl
 	url = /afs/ece.cmu.edu/project/abstract/repos/libfxl/
+[submodule "ext/libapds"]
+	path = ext/libapds
+	url = /afs/ece.cmu.edu/project/abstract/repos/libapds/
+[submodule "ext/libhmc"]
+	path = ext/libhmc
+	url = /afs/ece.cmu.edu/project/abstract/repos/libhmc/
