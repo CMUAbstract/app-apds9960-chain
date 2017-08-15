@@ -2,7 +2,6 @@ EXEC = gesture
 
 OBJECTS = \
 	main.o\
-	proximity.o\
 
 DEPS += \
 	libchain\
@@ -13,8 +12,7 @@ DEPS += \
 	libio \
 	libmsp \
   libfxl\
-#  libhmc \
-# libwispbase\
+  libapds\
 
 export MAIN_CLOCK_FREQ = 8000000
 
